@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Edwin AI Canvas Chat (Quizzes Section) - Full Panel v10.0
+// @name         Edwin AI Canvas Chat (Enhanced UI) - Full Panel v11.0
 // @namespace    http://tampermonkey.net/
-// @version      10.0.0
-// @description  Edwin AI panel for Canvas with chat, accessibility, and an expandable full-panel Quizzes tab with slide reveal animation - BACKEND INTEGRATED
+// @version      11.0.0
+// @description  Edwin AI panel with modern UI, smooth animations, and enhanced UX
 // @match        https://canvas.asu.edu/*
 // @grant        none
 // ==/UserScript==
@@ -11,43 +11,43 @@
     'use strict';
 
     // BACKEND CONFIGURATION
-    const BACKEND_BASE_URL = 'http://localhost:5000'; // Adjust as needed
-    const USER_ID = 1; // This should be dynamically determined from Canvas
-    const COURSE_ID = 231849; // This should be extracted from Canvas URL or context
+    const BACKEND_BASE_URL = 'http://localhost:5000';
+    const USER_ID = 1;
+    const COURSE_ID = 231849;
 
-    // CONFIGURATION (existing config preserved)
+    // CONFIGURATION
     const customSentence = "Hello, what is the grade breakdown for this class?";
     const wordDelay = 400;
     const wordDelayVariance = 100;
     const initialTypingDelay = 2000;
-    const panelMarginLeft = 290;
-    const panelMarginRight = 60;
+    const panelMarginLeft = 0;
+    const panelMarginRight = 0;
     const rainbowSpeed = 8;
     const rainbowColors = ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080'];
-    const quizzesPanelSpeed = 8; // seconds, adjustable
+    const quizzesPanelSpeed = 8;
     const quizzesPanelColors = ['#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd', '#f1f3f5', '#e0e0e0', '#f8f9fa'];
 
     // PROGRESS BAR CONFIGURATION
-    let quizProgressStage = 0; // 0-5, how many segments are filled
-    const progressBarWidth = 200; // total width in pixels
-    const progressBarHeight = 18; // height of the bar
-    const progressBarSpacing = 4; // spacing between segments
-    const progressBarFilledColor = '#orange';
+    let quizProgressStage = 0;
+    const progressBarWidth = 200;
+    const progressBarHeight = 18;
+    const progressBarSpacing = 4;
+    const progressBarFilledColor = '#ff6b35';
     const progressBarEmptyColor = '#555';
 
-    let streakProgress = 6; // filled segments out of 10
-    const streakBarTotal = 10; // total segments
-    const streakBarWidth = 600; // px, adjust to taste
-    const streakBarHeight = 24; // px
-    const streakBarFilledColor = '#orange';
+    let streakProgress = 6;
+    const streakBarTotal = 10;
+    const streakBarWidth = 600;
+    const streakBarHeight = 24;
+    const streakBarFilledColor = '#ff6b35';
     const streakBarEmptyColor = '#555';
 
     let isTypingMode = false, isCurrentlyTyping = false, startTimeoutID = null;
 
     // Quizzes tab configuration
-    const quizzesTabExtensionClosed = '51'; // How far the tab extends when closed (pixels)
-    const quizzesTabExtensionOpen = '-1790'; // How far the tab extends when open (pixels)
-    const quizzesTabAnimationSpeed = 0.39; // Animation speed in seconds
+    const quizzesTabExtensionClosed = '51';
+    const quizzesTabExtensionOpen = '-1790';
+    const quizzesTabAnimationSpeed = 0.39;
 
     // BACKEND API FUNCTIONS
     async function createNewConversation() {
@@ -139,34 +139,44 @@
             a.id = 'edwin-btn';
             a.href = '#';
             a.innerHTML = '<span>Edwin AI</span>';
+            a.setAttribute('role', 'button');
+            a.setAttribute('aria-label', 'Open Edwin AI Assistant');
 
-            // Button styling (preserved from original)
+            // Enhanced button styling
             Object.assign(a.style, {
-                background: 'linear-gradient(270deg,#2c2c34,#1f4a3f,#2c2c34)',
-                backgroundSize: '400% 400%',
-                animation: 'edwinGradient 12s ease infinite',
-                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundSize: '200% 200%',
+                animation: 'edwinButtonGlow 4s ease infinite',
+                borderRadius: '16px',
                 display: 'block',
-                padding: '16px 14px',
+                padding: '18px 16px',
                 textAlign: 'center',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-                fontFamily: 'Inter, Segoe UI, sans-serif',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
                 fontWeight: '600',
                 fontSize: '17px',
-                letterSpacing: '0.3px',
+                letterSpacing: '0.5px',
                 color: 'white',
-                textShadow: '0px 1px 2px rgba(0,0,0,0.6),0px 0px 8px rgba(255,255,255,0.15)',
-                transition: 'transform 0.25s, box-shadow 0.25s'
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)'
             });
 
             a.onmouseover = () => {
-                a.style.transform = 'translateY(-3px) scale(1.02)';
-                a.style.boxShadow = '0 6px 18px rgba(0,0,0,0.4)';
+                a.style.transform = 'translateY(-2px) scale(1.02)';
+                a.style.boxShadow = '0 12px 48px rgba(102, 126, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                a.style.filter = 'brightness(1.1)';
             };
 
             a.onmouseout = () => {
                 a.style.transform = 'none';
-                a.style.boxShadow = '0 4px 14px rgba(0,0,0,0.35)';
+                a.style.boxShadow = '0 8px 32px rgba(102, 126, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                a.style.filter = 'none';
+            };
+
+            a.onmousedown = () => {
+                a.style.transform = 'translateY(0) scale(0.98)';
             };
 
             li.appendChild(a);
@@ -181,19 +191,22 @@
         // ---------- PANEL (ENTIRE HTML) ----------
         const panel = document.createElement('div');
         panel.id = 'edwin-panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-label', 'Edwin AI Assistant');
         panel.innerHTML = `
             <div class="edwin-header">
                 <span>Edwin AI</span>
-                <div>
-                    <button id="edwin-settings">⚙</button>
-                    <button id="edwin-clear">🗑</button>
-                    <button id="edwin-close">✕</button>
+                <div class="edwin-header-controls">
+                    <button id="edwin-settings" aria-label="Settings">⚙</button>
+                    <button id="edwin-clear" aria-label="Clear chat">🗑</button>
+                    <button id="edwin-close" aria-label="Close panel">✕</button>
                 </div>
             </div>
 
             <div class="edwin-section" id="edwin-main-section">
                 <div class="edwin-body">
-                    <div id="edwin-greeting">
+                    <div id="edwin-greeting" class="edwin-greeting-card">
+                        <div class="greeting-avatar">🤖</div>
                         <h1>Hello, Andrey.</h1>
                         <p>What questions do you have regarding CSE 434?</p>
                         <p id="edwin-subtext">I have access to every lecture, assignment, and presentation.</p>
@@ -202,9 +215,14 @@
                 </div>
 
                 <div class="edwin-footer">
-                    <button id="edwin-mic">🎤</button>
-                    <input type="text" id="edwin-input" placeholder="Ask Edwin anything...">
-                    <button id="edwin-send">Send</button>
+                    <div class="input-wrapper">
+                        <input type="text" id="edwin-input" placeholder="Ask Edwin anything..." aria-label="Message input">
+                        <div class="input-glow"></div>
+                    </div>
+                    <button id="edwin-send" aria-label="Send message">
+                        <span>Send</span>
+                        <div class="send-glow"></div>
+                    </button>
                 </div>
             </div>
 
@@ -213,21 +231,21 @@
                 <div class="edwin-quizzes-header">
                     <span>Quizzes</span>
                     <div>
-                        <button id="edwin-quizzes-back">← Back</button>
+                        <button id="edwin-quizzes-back" aria-label="Back to main">← Back</button>
                     </div>
                 </div>
 
                 <div class="edwin-quizzes-body">
-                    <div class="edwin-quizzes-title-wrapper" style="display:flex;align-items:center;gap:12px;">
-                        <h2 style="margin:0;">CSE 434 Quizzes</h2>
-                        <div id="edwin-progress-bar"></div>
-                        <img id="edwin-fire-gif" src="https://i.imgur.com/K2xOtlf.gif" alt="fire" style="position: absolute; left: 1628px; top: 0px; width: 50px; height: 50px; display: none; z-index: 20;">
+                    <div class="edwin-quizzes-title-wrapper">
+                        <h2>CSE 434 Quizzes</h2>
+                        <div id="edwin-progress-bar" class="enhanced-progress"></div>
+                        <img id="edwin-fire-gif" src="https://i.imgur.com/K2xOtlf.gif" alt="Achievement fire effect" class="fire-effect">
                     </div>
-                    <p>View and practice course quizzes below.</p>
+                    <p class="section-description">View and practice course quizzes below.</p>
                     <div id="edwin-quizzes-list"></div>
                 </div>
 
-                <!-- QUIZ PLAY MODE (moved inside) -->
+                <!-- QUIZ PLAY MODE -->
                 <div id="edwin-quiz-play-section" style="display:none;">
                     <div class="edwin-quizzes-header">
                         <span id="edwin-quiz-title">Quiz</span>
@@ -240,7 +258,7 @@
             </div>
 
             <!-- STREAKS SECTION -->
-            <div id="edwin-streaks-section" style="display:none;">
+            <div id="edwin-streaks-section" style="display:none;" class="streaks-container">
                 <div class="edwin-quizzes-header">
                     <span id="edwin-streaks-title">Streaks</span>
                     <div>
@@ -248,52 +266,67 @@
                     </div>
                 </div>
 
-                <div class="edwin-quizzes-body" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%;">
+                <div class="edwin-quizzes-body streaks-body">
                     <div id="edwin-streaks-bar" class="edwin-streaks-bar"></div>
 
                     <!-- Hardcoded images -->
-                    <img id="edwin-streaks-img" src="https://i.imgur.com/3v9ZWrQ.png" style="position:absolute; top:190px; left:920px; width:120px; height:120px; pointer-events:none; user-select:none; z-index:5;">
-                    <img id="edwin-streaks-img" src="https://i.imgur.com/tTYZ28Y.png" style="position:absolute; top:185px; left:1540px; width:120px; height:120px; pointer-events:none; user-select:none; z-index:5;">
+                    <img id="edwin-streaks-img" src="https://i.imgur.com/3v9ZWrQ.png" class="streak-decoration left">
+                    <img id="edwin-streaks-img" src="https://i.imgur.com/tTYZ28Y.png" class="streak-decoration right">
 
-                    <!-- Fire and Number Side by Side -->
-                    <div style="position:relative; width:700px; height:600px; margin-bottom:20px;">
-                        <!-- Fire GIF -->
-                        <img id="edwin-streak-fire-gif" src="https://i.imgur.com/K2xOtlf.gif" alt="flame" style="position:absolute; left:-150px; top:-500px; width:900px; height:1536px; object-fit:contain;">
-
-                        <!-- Number -->
-                        <div style="position:absolute; left:360px; top:50%; transform:translateY(-50%); font-size:300px; font-weight:900; color:orange; line-height:1;">6</div>
+                    <!-- Fire and Number Display -->
+                    <div class="streak-display">
+                        <img id="edwin-streak-fire-gif" src="https://i.imgur.com/K2xOtlf.gif" alt="Streak fire" class="streak-fire">
+                        <div class="streak-number" id="streak-counter">6</div>
                     </div>
 
-                    <!-- Days label -->
-                    <div style="font-size:24px; color:orange; margin-bottom:40px;">Days</div>
+                    <div class="streak-label">Days</div>
                 </div>
             </div>
 
-            <!-- Settings Modal -->
-            <div id="edwin-settings-modal">
-                <h2>Settings</h2>
-                <label><input type="checkbox" id="colorblind-mode"> Colorblind Mode</label><br>
-                <label><input type="checkbox" id="highcontrast-mode"> High Contrast Mode</label><br>
-                <label>Text Size:
-                    <select id="text-size">
-                        <option value="16">Normal</option>
-                        <option value="20">Large</option>
-                        <option value="24">Extra Large</option>
-                    </select>
-                </label><br>
-                <label>Developer Mode Settings: <button class="edit-btn">Edit</button></label>
-                <label>API Key Limits: <button class="edit-btn">Edit</button></label>
-                <button id="close-settings">Close</button>
+            <!-- Enhanced Settings Modal -->
+            <div id="edwin-settings-modal" class="settings-modal">
+                <div class="settings-content">
+                    <h2>Settings</h2>
+                    <div class="settings-group">
+                        <label class="setting-item">
+                            <input type="checkbox" id="colorblind-mode">
+                            <span class="checkmark"></span>
+                            Colorblind Mode
+                        </label>
+                        <label class="setting-item">
+                            <input type="checkbox" id="highcontrast-mode">
+                            <span class="checkmark"></span>
+                            High Contrast Mode
+                        </label>
+                        <div class="setting-item">
+                            <label>Text Size:</label>
+                            <select id="text-size" class="setting-select">
+                                <option value="16">Normal</option>
+                                <option value="20">Large</option>
+                                <option value="24">Extra Large</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="close-settings" class="settings-close">Close</button>
+                </div>
             </div>
 
-            <!-- QUIZZES TAB (stays attached to the left side of the panel, slides slightly left when open) -->
-            <div id="edwin-quizzes-tab" role="button" aria-pressed="false" tabindex="0">Quizzes</div>
+            <!-- QUIZZES TAB -->
+            <div id="edwin-quizzes-tab" role="button" aria-pressed="false" tabindex="0" class="quizzes-tab">
+                <span>Quizzes</span>
+                <div class="tab-glow"></div>
+            </div>
         `;
 
         document.body.appendChild(panel);
 
-        // Initialize quiz data and functionality (preserved from original)
+        // Initialize functionality
         initializeQuizzes();
+            document.getElementById('edwin-quiz-exit').addEventListener('click', () => {
+            document.getElementById('edwin-quiz-play-section').style.display = 'none';
+            document.querySelector('.edwin-quizzes-body').style.display = 'flex';
+        });
+
         initializeInteractions();
         initializeStyles();
 
@@ -301,6 +334,11 @@
         document.getElementById('edwin-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             panel.classList.add('open');
+
+            // Auto-focus input for better UX
+            setTimeout(() => {
+                document.getElementById('edwin-input').focus();
+            }, 500);
 
             // ensure quizzes overlay is fully closed and hidden when opening main panel
             panel.classList.remove('quizzes-open', 'quizzes-visible');
@@ -313,73 +351,201 @@
     }
 
     function initializeQuizzes() {
-        // Quiz data and functions (preserved from original - truncated for brevity)
+        // Quiz data
         const quizzes = [
             {
                 id: 1,
                 title: "Chapter 1: Computer Networks and the Internet",
                 description: "Covers OSI model, basic protocols, IPv4, and IP addressing.",
-                completed: localStorage.getItem('edwin_quiz_1') === 'true'
+                completed: localStorage.getItem('edwin_quiz_1') === 'true',
+                difficulty: "Beginner"
             },
             {
                 id: 2,
                 title: "Chapter 2: Application Layer",
                 description: "Focuses on static/dynamic routing, subnetting, routing tables.",
-                completed: localStorage.getItem('edwin_quiz_2') === 'true'
+                completed: localStorage.getItem('edwin_quiz_2') === 'true',
+                difficulty: "Intermediate"
             },
             {
                 id: 3,
                 title: "Chapter 3: Transport Layer",
                 description: "Application layer protocols, socket programming, TCP vs UDP.",
-                completed: localStorage.getItem('edwin_quiz_3') === 'true'
+                completed: localStorage.getItem('edwin_quiz_3') === 'true',
+                difficulty: "Advanced"
             }
         ];
 
-        // Quiz questions data (preserved from original - truncated for brevity)
+        // Quiz questions data
         const quizQuestions = {
-            1: [
-                {
-                    question: "Which layer is responsible for routing in the OSI model?",
-                    options: ["Application", "Network", "Transport", "Physical"],
-                    correct: 1,
-                    explanation: "The Network layer handles routing of packets between devices."
-                }
-                // ... more questions
-            ]
-            // ... more quizzes
-        };
+                1: [
+                    {
+                        question: "Which layer is responsible for routing in the OSI model?",
+                        options: ["Application", "Network", "Transport", "Physical"],
+                        correct: 1,
+                        explanation: "The Network layer handles routing of packets between devices."
+                    }
+                ],
+                2: [
+                    {
+                        question: "Which protocol is used for retrieving emails from a server?",
+                        options: ["HTTP", "IMAP", "FTP", "SMTP"],
+                        correct: 1,
+                        explanation: "IMAP is the main protocol used to fetch emails from a server."
+                    }
+                ],
+                3: [
+                    {
+                        question: "Which protocol provides reliable, connection-oriented transport?",
+                        options: ["UDP", "TCP", "IP", "ICMP"],
+                        correct: 1,
+                        explanation: "TCP is connection-oriented and ensures reliable delivery."
+                    }
+                ]
+            };
 
-        // Quiz rendering and management functions (preserved from original)
+
+        // Enhanced quiz rendering
         function renderQuizzesList() {
             const list = document.getElementById('edwin-quizzes-list');
             list.innerHTML = '';
 
-            quizzes.forEach(q => {
+            quizzes.forEach((q, index) => {
                 const item = document.createElement('div');
                 item.className = 'edwin-quiz-item';
                 item.innerHTML = `
-                    <div class="quiz-title">${q.title}</div>
+                    <div class="quiz-card-header">
+                        <div class="quiz-title">${q.title}</div>
+                        <div class="quiz-difficulty ${q.difficulty.toLowerCase()}">${q.difficulty}</div>
+                    </div>
                     <div class="quiz-desc">${q.description}</div>
-                    <button class="quiz-action" data-quiz-id="${q.id}">${q.completed ? '✓ Retake Quiz' : 'Take Quiz'}</button>
+                    <div class="quiz-card-footer">
+                        <button class="quiz-action ${q.completed ? 'completed' : ''}" data-quiz-id="${q.id}">
+                            ${q.completed ? '✓ Retake Quiz' : 'Take Quiz'}
+                            <div class="button-glow"></div>
+                        </button>
+                        ${q.completed ? '<div class="completion-badge">Completed!</div>' : ''}
+                    </div>
                 `;
 
+                // Add stagger animation
+                item.style.animationDelay = `${index * 0.1}s`;
+
                 const actionBtn = item.querySelector('.quiz-action');
-                actionBtn.style.background = q.completed ? '#00d88c' : '#00ffa3';
                 actionBtn.addEventListener('click', () => startQuiz(q.id, q.title));
 
                 list.appendChild(item);
             });
         }
 
+        function startQuiz(quizId, title) {
+    const quizPlay = document.getElementById('edwin-quiz-play-section');
+    const quizBody = document.getElementById('edwin-quiz-body');
+    const quizTitle = document.getElementById('edwin-quiz-title');
+
+    // Show quiz play section
+    quizPlay.style.display = 'block';
+    quizTitle.textContent = title;
+    quizBody.innerHTML = '';
+
+    // Load quiz questions
+    const questions = quizQuestions[quizId] || [];
+    questions.forEach((q, index) => {
+        const qEl = document.createElement('div');
+        qEl.className = 'quiz-question';
+        qEl.innerHTML = `
+            <div class="quiz-q-text">${index + 1}. ${q.question}</div>
+            <div class="quiz-options">
+                ${q.options.map((opt, i) => `
+                    <button class="quiz-option" data-correct="${i === q.correct}">
+                        ${opt}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        quizBody.appendChild(qEl);
+    });
+
+    // Option click handling
+    quizBody.querySelectorAll('.quiz-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.correct === "true") {
+                btn.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)";
+                alert("✅ Correct!\n\n" + questions[0].explanation);
+            } else {
+                btn.style.background = "linear-gradient(135deg, #f44336, #b71c1c)";
+                alert("❌ Incorrect.\n\n" + questions[0].explanation);
+            }
+        });
+    });
+
+    // Hide quiz list section while playing
+    document.querySelector('.edwin-quizzes-body').style.display = 'none';
+}
+
+
         // Initialize quiz functionality
         renderQuizzesList();
+        updateProgressBar();
+        updateStreaksBar();
+    }
 
-        // Other quiz functions (preserved from original)
-        // ... quiz engine, progress bar, etc.
+    function updateProgressBar() {
+        const progressBar = document.getElementById('edwin-progress-bar');
+        const segments = 5;
+        const filled = quizProgressStage;
+
+        progressBar.innerHTML = '';
+
+        for (let i = 0; i < segments; i++) {
+            const segment = document.createElement('div');
+            segment.className = `progress-segment ${i < filled ? 'filled' : ''}`;
+            segment.style.animationDelay = `${i * 0.2}s`;
+            progressBar.appendChild(segment);
+        }
+
+        // Show fire effect if fully completed
+        const fireGif = document.getElementById('edwin-fire-gif');
+        if (filled === segments) {
+            fireGif.style.display = 'block';
+            fireGif.style.animation = 'fireGlow 2s ease-in-out infinite alternate';
+        }
+    }
+
+    function updateStreaksBar() {
+        const streaksBar = document.getElementById('edwin-streaks-bar');
+        const segments = streakBarTotal;
+        const filled = streakProgress;
+
+        streaksBar.innerHTML = '';
+
+        for (let i = 0; i < segments; i++) {
+            const segment = document.createElement('div');
+            segment.className = `streak-segment ${i < filled ? 'filled' : ''}`;
+            segment.style.animationDelay = `${i * 0.1}s`;
+            streaksBar.appendChild(segment);
+        }
+
+        // Animate streak counter
+        animateNumber('streak-counter', filled);
+    }
+
+    function animateNumber(elementId, targetNumber) {
+        const element = document.getElementById(elementId);
+        let current = 0;
+        const increment = targetNumber > 20 ? Math.ceil(targetNumber / 20) : 1;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= targetNumber) {
+                current = targetNumber;
+                clearInterval(timer);
+            }
+            element.textContent = current;
+        }, 50);
     }
 
     function initializeInteractions() {
-        // MODIFIED: Replace getResponse with actual backend call
+        // Enhanced message handling with backend integration
         async function getResponse(input) {
             const response = await sendMessageToBackend(input);
             return response.answer;
@@ -391,7 +557,11 @@
             if (!text) return;
 
             const greeting = document.getElementById('edwin-greeting');
-            if (greeting) greeting.style.display = 'none';
+            if (greeting) {
+                greeting.style.transform = 'translateY(-20px)';
+                greeting.style.opacity = '0';
+                setTimeout(() => greeting.style.display = 'none', 300);
+            }
 
             addMessage('user', text);
             inputBox.value = '';
@@ -399,60 +569,90 @@
             const chat = document.getElementById('edwin-chat');
             const thinkingMsg = document.createElement('div');
             thinkingMsg.className = 'edwin-msg edwin thinking';
-            thinkingMsg.innerHTML = '<span class="spinner">⟳</span> <span class="thinking-text">Thinking...</span>';
+            thinkingMsg.innerHTML = `
+                <div class="message-avatar thinking-avatar">🤔</div>
+                <div class="message-content">
+                    <div class="message-bubble thinking-bubble">
+                        <span class="spinner">⟳</span>
+                        <span class="thinking-text">Thinking...</span>
+                        <div class="thinking-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
             chat.appendChild(thinkingMsg);
 
-            let opacity = 0;
-            const fadeInThinking = setInterval(() => {
-                thinkingMsg.style.opacity = opacity += 0.05;
-                if (opacity >= 1) clearInterval(fadeInThinking);
-            }, 25);
-
+            // Animate thinking message
+            setTimeout(() => thinkingMsg.classList.add('show'), 50);
             chat.scrollTop = chat.scrollHeight;
 
             try {
                 // Get AI response from backend
                 const aiResponse = await getResponse(text);
 
-                // Remove thinking message
-                chat.removeChild(thinkingMsg);
+                // Remove thinking message with animation
+                thinkingMsg.classList.add('fade-out');
+                setTimeout(() => chat.removeChild(thinkingMsg), 300);
 
-                // Add AI response
-                addMessage('edwin', aiResponse);
+                // Add AI response with delay for better UX
+                setTimeout(() => addMessage('edwin', aiResponse), 400);
             } catch (error) {
                 console.error('Error getting response:', error);
-                chat.removeChild(thinkingMsg);
-                addMessage('edwin', "I'm having trouble processing your request. Please try again.");
+                thinkingMsg.classList.add('fade-out');
+                setTimeout(() => chat.removeChild(thinkingMsg), 300);
+                setTimeout(() => addMessage('edwin', "I'm having trouble processing your request. Please try again."), 400);
             }
         }
 
         function addMessage(sender, text) {
             const chat = document.getElementById('edwin-chat');
             const msg = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
             msg.className = `edwin-msg ${sender}`;
-            msg.innerHTML = '<span></span>';
+            msg.innerHTML = `
+                <div class="message-avatar ${sender}-avatar">
+                    ${sender === 'user' ? '👤' : '🤖'}
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble ${sender}-bubble">
+                        <span class="message-text"></span>
+                        <div class="message-timestamp">${timestamp}</div>
+                    </div>
+                </div>
+            `;
+
             chat.appendChild(msg);
 
-            const span = msg.querySelector('span');
+            const textSpan = msg.querySelector('.message-text');
+
             if (sender === 'edwin') {
+                // Typing animation for Edwin
                 let i = 0;
-                const interval = setInterval(() => {
-                    span.textContent += text[i];
+                const typeInterval = setInterval(() => {
+                    textSpan.textContent += text[i];
                     if (++i >= text.length) {
-                        clearInterval(interval);
+                        clearInterval(typeInterval);
                         chat.scrollTop = chat.scrollHeight;
                     }
-                }, 20);
+                }, 30);
+
+                // Show message with slide animation
+                setTimeout(() => msg.classList.add('show'), 100);
             } else {
-                span.textContent = text;
-                msg.style.opacity = 0;
-                let opacity = 0;
-                const fadeInterval = setInterval(() => {
-                    msg.style.opacity = opacity += 0.05;
-                    if (opacity >= 1) clearInterval(fadeInterval);
-                }, 25);
+                // Instant display for user messages
+                textSpan.textContent = text;
+                setTimeout(() => msg.classList.add('show'), 50);
             }
-            chat.scrollTop = chat.scrollHeight;
+
+            // Auto-scroll with smooth behavior
+            setTimeout(() => {
+                chat.scrollTo({
+                    top: chat.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
         }
 
         // Event listeners
@@ -461,158 +661,182 @@
             if (e.key === 'Enter') sendMessage();
         });
 
-        // MODIFIED: Clear chat AND create new conversation
+        // Enhanced clear functionality
         document.getElementById('edwin-clear').addEventListener('click', async () => {
             const chat = document.getElementById('edwin-chat');
-            chat.innerHTML = '';
-            const greeting = document.getElementById('edwin-greeting');
-            if (greeting) greeting.style.display = 'block';
+            const messages = chat.querySelectorAll('.edwin-msg');
+
+            // Animate messages out
+            messages.forEach((msg, index) => {
+                setTimeout(() => {
+                    msg.style.transform = 'translateX(-100%)';
+                    msg.style.opacity = '0';
+                }, index * 50);
+            });
+
+            setTimeout(() => {
+                chat.innerHTML = '';
+                const greeting = document.getElementById('edwin-greeting');
+                if (greeting) {
+                    greeting.style.display = 'block';
+                    greeting.style.transform = 'translateY(20px)';
+                    greeting.style.opacity = '0';
+                    setTimeout(() => {
+                        greeting.style.transform = 'none';
+                        greeting.style.opacity = '1';
+                    }, 100);
+                }
+            }, messages.length * 50 + 200);
 
             // Create new conversation when clearing chat
             await createNewConversation();
         });
 
-        // Close panel
+        // Close panel with animation
         document.addEventListener('click', (e) => {
             if (e.target.id === 'edwin-close') {
                 const panel = document.getElementById('edwin-panel');
-                panel.classList.remove('open', 'quizzes-open', 'quizzes-visible');
-                const quizzesTab = panel.querySelector('#edwin-quizzes-tab');
+                panel.style.transform = 'translateY(20px)';
+                panel.style.opacity = '0.8';
+
+                setTimeout(() => {
+                    panel.classList.remove('open', 'quizzes-open', 'quizzes-visible');
+                    panel.style.transform = '';
+                    panel.style.opacity = '';
+                    const quizzesTab = panel.querySelector('#edwin-quizzes-tab');
+                    quizzesTab.setAttribute('aria-pressed', 'false');
+                }, 200);
+            }
+        });
+
+        // Enhanced quizzes tab interaction
+        const quizzesTab = document.getElementById('edwin-quizzes-tab');
+        quizzesTab.addEventListener('click', () => {
+            const panel = document.getElementById('edwin-panel');
+            const isOpen = panel.classList.contains('quizzes-open');
+
+            if (!isOpen) {
+                panel.classList.add('quizzes-visible');
+                setTimeout(() => panel.classList.add('quizzes-open'), 50);
+                quizzesTab.setAttribute('aria-pressed', 'true');
+            } else {
+                panel.classList.remove('quizzes-open');
+                setTimeout(() => panel.classList.remove('quizzes-visible'), 450);
                 quizzesTab.setAttribute('aria-pressed', 'false');
             }
         });
 
-        // Other interactions (microphone, settings, etc.) - preserved from original
+        // Back button functionality
+        document.getElementById('edwin-quizzes-back').addEventListener('click', () => {
+            const panel = document.getElementById('edwin-panel');
+            panel.classList.remove('quizzes-open');
+            setTimeout(() => panel.classList.remove('quizzes-visible'), 450);
+            quizzesTab.setAttribute('aria-pressed', 'false');
+        });
+
         initializeOtherInteractions();
     }
 
     function initializeOtherInteractions() {
-        // Microphone functionality (preserved from original)
-        let isTypingMode = false, isCurrentlyTyping = false, startTimeoutID = null;
-
-        function updateMicButtonAppearance() {
-            const micButton = document.getElementById('edwin-mic');
-            if (isCurrentlyTyping) {
-                micButton.innerHTML = '⏸';
-                micButton.style.animation = 'pulse 1s infinite';
-                micButton.style.background = '#ff6b00';
-            } else if (isTypingMode) {
-                micButton.innerHTML = '✕';
-                micButton.style.animation = 'none';
-                micButton.style.background = '#00d88c';
-                micButton.title = 'Click to cancel and revert to mic';
-            } else {
-                micButton.innerHTML = '🎤';
-                micButton.style.animation = 'none';
-                micButton.style.background = '#1b1f27';
-                micButton.title = 'Click to prepare typing mode';
-            }
-        }
-
-        function typeCustomSentence() {
-            if (isCurrentlyTyping) return;
-            isCurrentlyTyping = true;
-
-            const inputBox = document.getElementById('edwin-input');
-            inputBox.value = '';
-            const words = customSentence.split(' ');
-            let currentText = '', wordIndex = 0;
-
-            function typeNextWord() {
-                if (wordIndex < words.length) {
-                    currentText += (wordIndex > 0 ? ' ' : '') + words[wordIndex++];
-                    inputBox.value = currentText;
-                    const randomOffset = (Math.random() * 2 - 1) * wordDelayVariance;
-                    setTimeout(typeNextWord, wordDelay + randomOffset);
-                } else {
-                    isCurrentlyTyping = false;
-                    isTypingMode = false;
-                    updateMicButtonAppearance();
-                }
-            }
-            typeNextWord();
-        }
-
-        document.getElementById('edwin-mic').addEventListener('click', () => {
-            if (isCurrentlyTyping) return;
-
-            if (!isTypingMode) {
-                isTypingMode = true;
-                updateMicButtonAppearance();
-                startTimeoutID = setTimeout(() => {
-                    typeCustomSentence();
-                    startTimeoutID = null;
-                }, initialTypingDelay);
-            } else {
-                if (startTimeoutID) {
-                    clearTimeout(startTimeoutID);
-                    startTimeoutID = null;
-                }
-                isTypingMode = false;
-                updateMicButtonAppearance();
-            }
-        });
-
-        // Settings functionality (preserved from original)
+        // Enhanced settings functionality
         const settingsModal = document.getElementById('edwin-settings-modal');
         document.getElementById('edwin-settings').addEventListener('click', () => {
-            settingsModal.style.display = 'block';
+            settingsModal.classList.add('show');
         });
 
         document.getElementById('close-settings').addEventListener('click', () => {
-            settingsModal.style.display = 'none';
+            settingsModal.classList.remove('show');
         });
 
-        // Settings options
+        // Settings options with enhanced feedback
         document.getElementById('colorblind-mode').addEventListener('change', (e) => {
-            const panel = document.getElementById('edwin-panel');
-            panel.style.filter = e.target.checked ? 'grayscale(0.2) contrast(1.2)' : '';
+            document.documentElement.style.setProperty('--colorblind-filter',
+                e.target.checked ? 'grayscale(0.3) contrast(1.3)' : 'none');
         });
 
         document.getElementById('highcontrast-mode').addEventListener('change', (e) => {
-            const panel = document.getElementById('edwin-panel');
-            if (e.target.checked) {
-                panel.style.background = '#000';
-                panel.style.color = '#fff';
-            } else {
-                panel.style.background = '';
-                panel.style.color = '';
-            }
+            document.documentElement.classList.toggle('high-contrast', e.target.checked);
         });
 
-        function setTextSize(sizePx) {
-            const panel = document.getElementById('edwin-panel');
-            panel.querySelectorAll('*').forEach(el => {
-                const computed = window.getComputedStyle(el);
-                if (computed.fontSize) {
-                    el.style.fontSize = sizePx + 'px';
-                }
-            });
-        }
-
         document.getElementById('text-size').addEventListener('change', (e) => {
-            setTextSize(e.target.value);
+            document.documentElement.style.setProperty('--base-font-size', e.target.value + 'px');
         });
     }
 
     function initializeStyles() {
         const style = document.createElement('style');
         style.innerHTML = `
-            @keyframes edwinGradient {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
+            :root {
+                --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                --panel-bg: linear-gradient(135deg, rgba(10, 13, 17, 0.95) 0%, rgba(13, 17, 23, 0.95) 100%);
+                --glass-bg: rgba(255, 255, 255, 0.05);
+                --glass-border: rgba(255, 255, 255, 0.1);
+                --text-primary: #ffffff;
+                --text-secondary: rgba(255, 255, 255, 0.8);
+                --text-muted: rgba(255, 255, 255, 0.6);
+                --border-radius: 16px;
+                --border-radius-sm: 12px;
+                --border-radius-lg: 24px;
+                --spacing-xs: 4px;
+                --spacing-sm: 8px;
+                --spacing-md: 16px;
+                --spacing-lg: 24px;
+                --spacing-xl: 32px;
+                --animation-fast: 0.2s;
+                --animation-normal: 0.3s;
+                --animation-slow: 0.5s;
+                --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.1);
+                --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.2);
+                --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.3);
+                --base-font-size: 16px;
+                --colorblind-filter: none;
             }
 
-            @keyframes aurora {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
+            .high-contrast {
+                --panel-bg: linear-gradient(135deg, #000000 0%, #111111 100%);
+                --text-primary: #ffffff;
+                --text-secondary: #ffffff;
+                --glass-bg: rgba(255, 255, 255, 0.1);
             }
 
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+            @keyframes edwinButtonGlow {
+                0%, 100% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+            }
+
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes slideInLeft {
+                from {
+                    opacity: 0;
+                    transform: translateX(-30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            @keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
             }
 
             @keyframes pulse {
@@ -620,305 +844,445 @@
                 50% { opacity: 1; }
             }
 
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
+                50% { box-shadow: 0 0 40px rgba(102, 126, 234, 0.6); }
+            }
+
+            @keyframes fireGlow {
+                0%, 100% { filter: brightness(1) saturate(1); }
+                50% { filter: brightness(1.3) saturate(1.5); }
+            }
+
+            @keyframes progressFill {
+                from { width: 0%; }
+                to { width: 100%; }
+            }
+
+            @keyframes bounceIn {
+                0% { opacity: 0; transform: scale(0.3); }
+                50% { opacity: 1; transform: scale(1.05); }
+                70% { transform: scale(0.9); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+
+            @keyframes thinkingDots {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+
+            /* Base Panel Styles */
             #edwin-panel {
                 position: fixed;
                 left: ${panelMarginLeft}px;
                 right: ${panelMarginRight}px;
                 bottom: -100%;
-                height: 85%;
-                background: linear-gradient(270deg,#0a0d11,#0d1117,#0b3b2d,#14583a,#12312a);
-                background-size: 400% 400%;
-                animation: aurora 20s ease infinite alternate;
-                color: white;
+                height: 100vh;
+                background: var(--panel-bg);
+                backdrop-filter: blur(20px);
+                color: var(--text-primary);
                 display: flex;
                 flex-direction: column;
-                transition: bottom 0.45s, opacity 0.3s;
-                border-top-left-radius: 18px;
-                border-top-right-radius: 18px;
-                font-family: 'Inter', 'Segoe UI', sans-serif;
-                box-shadow: 0 -4px 20px rgba(0,0,0,0.75);
+                transition: all var(--animation-slow) cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 0;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                box-shadow: var(--shadow-lg);
                 opacity: 0;
                 z-index: 9999;
                 overflow: visible;
+                border: 1px solid var(--glass-border);
+                filter: var(--colorblind-filter);
             }
 
             #edwin-panel.open {
                 bottom: 0;
                 opacity: 1;
+                animation: slideInUp var(--animation-slow) cubic-bezier(0.4, 0, 0.2, 1);
             }
 
+            /* Header */
             .edwin-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 16px 20px;
+                padding: var(--spacing-md) var(--spacing-lg);
                 font-size: 18px;
                 font-weight: 600;
-                background: rgba(13,17,23,0.85);
-                backdrop-filter: blur(6px);
-                border-top-left-radius: 18px;
-                border-top-right-radius: 18px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                border-radius: 0;
+                border-bottom: 1px solid var(--glass-border);
+                position: relative;
                 z-index: 5;
             }
 
+            .edwin-header-controls {
+                display: flex;
+                gap: var(--spacing-sm);
+            }
+
             .edwin-header button {
-                background: none;
-                border: none;
-                font-size: 20px;
-                color: #bbb;
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-sm);
+                font-size: 18px;
+                color: var(--text-secondary);
                 cursor: pointer;
-                margin-left: 6px;
-                transition: color 0.2s;
+                padding: var(--spacing-sm) var(--spacing-md);
+                transition: all var(--animation-fast);
+                backdrop-filter: blur(8px);
             }
 
             .edwin-header button:hover {
-                color: white;
+                color: var(--text-primary);
+                background: rgba(255, 255, 255, 0.1);
+                transform: scale(1.1);
             }
 
+            /* Main Body */
             .edwin-body {
-                padding: 16px;
+                padding: var(--spacing-lg);
+                padding-bottom: 120px;
                 flex-grow: 1;
                 overflow-y: auto;
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: var(--spacing-md);
+                scroll-behavior: smooth;
             }
 
-            #edwin-greeting {
+            .edwin-body::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .edwin-body::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .edwin-body::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 3px;
+            }
+
+            /* Enhanced Greeting Card */
+            .edwin-greeting-card {
                 text-align: center;
+                padding: var(--spacing-xl);
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-lg);
+                backdrop-filter: blur(12px);
+                transition: all var(--animation-normal);
+                animation: slideInUp var(--animation-slow) ease-out;
             }
 
-            #edwin-greeting h1 {
+            .greeting-avatar {
+                font-size: 48px;
+                margin-bottom: var(--spacing-md);
+                animation: bounceIn 1s ease-out 0.5s both;
+            }
+
+            .edwin-greeting-card h1 {
                 font-size: 2.5em;
                 font-weight: 700;
-                margin-bottom: 0.3em;
+                margin-bottom: 0.5em;
+                background: var(--primary-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }
 
-            #edwin-greeting p {
-                font-size: 1.4em;
-                opacity: 0.9;
+            .edwin-greeting-card p {
+                font-size: 1.2em;
+                color: var(--text-secondary);
+                margin-bottom: var(--spacing-md);
             }
 
             #edwin-subtext {
                 font-size: 1em;
-                opacity: 0.65;
+                color: var(--text-muted);
             }
 
+            /* Enhanced Footer */
             .edwin-footer {
                 display: flex;
-                padding: 14px 16px;
-                background: rgba(17,20,26,0.85);
-                backdrop-filter: blur(6px);
-                border-top: 1px solid rgba(255,255,255,0.05);
-                gap: 10px;
+                padding: var(--spacing-md) var(--spacing-lg);
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                border-top: 1px solid var(--glass-border);
+                gap: var(--spacing-md);
                 align-items: center;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
                 z-index: 4;
             }
 
-            .edwin-footer button {
-                padding: 14px 22px;
-                border: none;
-                border-radius: 12px;
-                background: linear-gradient(270deg,#00ffa3,#00e695);
-                color: #0a0d11;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 16px;
-                transition: all 0.2s, transform 0.15s;
+            /* Enhanced Input */
+            .input-wrapper {
+                position: relative;
+                flex-grow: 1;
             }
 
-            .edwin-footer button:hover {
-                background: linear-gradient(270deg,#00e695,#00d88c);
-                transform: scale(1.03);
-            }
-
-            .edwin-footer button:active {
-                transform: scale(0.98);
-            }
-
-            .edwin-footer #edwin-mic {
-                font-size: 20px;
-                padding: 14px 18px;
-                background: #1b1f27;
-                color: #00ffa3;
-                transition: all 0.3s;
+            .input-glow {
+                position: absolute;
+                inset: 0;
+                border-radius: var(--border-radius);
+                background: var(--primary-gradient);
+                opacity: 0;
+                z-index: -1;
+                transition: opacity var(--animation-normal);
             }
 
             .edwin-footer input {
-                flex-grow: 1;
-                padding: 14px 18px;
-                border-radius: 12px;
-                border: none;
-                background: #1b1f27;
-                color: white;
-                font-size: 16px;
-                transition: box-shadow 0.2s;
+                flex: 1;
+                min-width: 0;
+                padding: var(--spacing-md) var(--spacing-lg);
+                border-radius: var(--border-radius);
+                border: 1px solid var(--glass-border);
+                background: var(--glass-bg);
+                backdrop-filter: blur(8px);
+                color: var(--text-primary);
+                font-size: var(--base-font-size);
+                transition: all var(--animation-normal);
+                position: relative;
+                z-index: 1;
             }
+
+
 
             .edwin-footer input:focus {
                 outline: none;
-                box-shadow: 0 0 0 2px rgba(0,255,150,0.6);
+                border-color: rgba(102, 126, 234, 0.5);
             }
 
+            .edwin-footer input:focus + .input-glow {
+                opacity: 0.1;
+            }
+
+            .edwin-footer input::placeholder {
+                color: var(--text-muted);
+            }
+
+            /* Enhanced Send Button */
+            .edwin-footer #edwin-send {
+                position: relative;
+                min-width: 120px;   /* 👈 force button width */
+                padding: var(--spacing-md) var(--spacing-xl);
+                border: none;
+                border-radius: var(--border-radius);
+                background: var(--primary-gradient);
+                color: white;
+                font-weight: 600;
+                font-size: var(--base-font-size);
+                cursor: pointer;
+                transition: all var(--animation-normal);
+                overflow: hidden;
+                text-align: center;
+            }
+
+
+            .send-glow {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+                opacity: 0;
+                transition: opacity var(--animation-fast);
+            }
+
+            .edwin-footer #edwin-send:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+            .edwin-footer #edwin-send:hover .send-glow {
+                opacity: 1;
+            }
+
+            .edwin-footer #edwin-send:active {
+                transform: translateY(0) scale(0.98);
+            }
+
+            /* Chat Messages */
             #edwin-chat {
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: var(--spacing-md);
             }
 
             .edwin-msg {
-                max-width: 75%;
-                padding: 14px 18px;
-                border-radius: 16px;
-                line-height: 1.6;
-                word-wrap: break-word;
-                font-size: 16px;
-                transition: opacity 0.3s;
+                display: flex;
+                gap: var(--spacing-sm);
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all var(--animation-normal);
+                animation: slideInUp var(--animation-normal) ease-out forwards;
+            }
+
+            .edwin-msg.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .edwin-msg.fade-out {
+                opacity: 0;
+                transform: translateX(-30px);
             }
 
             .edwin-msg.user {
-                background: #1b1f27;
-                align-self: flex-end;
-                color: #fff;
+                flex-direction: row-reverse;
             }
 
-            .edwin-msg.edwin {
-                background: linear-gradient(270deg,#00ffa3,#00e695);
-                color: #0a0d11;
-                align-self: flex-start;
-            }
-
-            .edwin-msg.thinking {
+            .message-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-style: italic;
-                color: #00ffa3;
+                justify-content: center;
+                font-size: 18px;
+                flex-shrink: 0;
+                border: 2px solid var(--glass-border);
+                backdrop-filter: blur(8px);
             }
 
-            .edwin-msg.thinking .spinner {
-                display: inline-block;
-                animation: spin 1s linear infinite, pulse 1.2s ease-in-out infinite;
+            .user-avatar {
+                background: var(--secondary-gradient);
             }
 
-            .edwin-msg.thinking .thinking-text {
-                animation: pulse 1.2s ease-in-out infinite;
+            .edwin-avatar {
+                background: var(--primary-gradient);
             }
 
-            #edwin-settings-modal {
-                display: none;
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #111;
-                color: #fff;
-                padding: 24px;
-                border-radius: 18px;
-                box-shadow: 0 8px 30px rgba(0,0,0,0.7);
-                z-index: 10000;
-                width: 300px;
-                font-size: 16px;
+            .thinking-avatar {
+                background: var(--success-gradient);
+                animation: pulse 2s infinite;
             }
 
-            #edwin-settings-modal h2 {
-                margin-top: 0;
-                font-size: 1.6em;
-                margin-bottom: 16px;
+            .message-content {
+                display: flex;
+                flex-direction: column;
+                max-width: 70%;
             }
 
-            #edwin-settings-modal label {
-                display: block;
-                margin-bottom: 12px;
+            .message-bubble {
+                padding: var(--spacing-md) var(--spacing-lg);
+                border-radius: var(--border-radius-lg);
+                backdrop-filter: blur(8px);
+                border: 1px solid var(--glass-border);
+                position: relative;
+                word-wrap: break-word;
+                line-height: 1.5;
             }
 
-            #edwin-settings-modal button {
-                padding: 8px 16px;
-                border: none;
-                border-radius: 12px;
-                background: #00e695;
-                color: #0a0d11;
-                cursor: pointer;
-                font-weight: 600;
+            .user-bubble {
+                background: var(--glass-bg);
+                color: var(--text-primary);
+                border-bottom-right-radius: var(--spacing-sm);
             }
 
-            #edwin-settings-modal button:hover {
-                background: #00ffa3;
+            .edwin-bubble {
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+                color: var(--text-primary);
+                border-bottom-left-radius: var(--spacing-sm);
             }
 
-            #edwin-settings-modal .edit-btn {
-                padding: 4px 10px;
+            .thinking-bubble {
+                background: linear-gradient(135deg, rgba(79, 172, 254, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
+                color: var(--text-primary);
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-sm);
+            }
+
+            .message-timestamp {
                 font-size: 12px;
-                margin-left: 6px;
-                background: #0a0d11;
-                color: #00ffa3;
-                border-radius: 8px;
+                color: var(--text-muted);
+                margin-top: var(--spacing-xs);
+                text-align: right;
             }
 
-            /* QUIZZES TAB */
-            #edwin-quizzes-tab {
+            .edwin-msg.user .message-timestamp {
+                text-align: left;
+            }
+
+            .spinner {
+                display: inline-block;
+                animation: spin 1s linear infinite;
+            }
+
+            .thinking-dots {
+                display: flex;
+                gap: 4px;
+            }
+
+            .thinking-dots span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: currentColor;
+                animation: thinkingDots 1.4s ease-in-out infinite both;
+            }
+
+            .thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+            .thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+            /* Enhanced Quizzes Tab */
+            .quizzes-tab {
                 position: absolute;
                 top: 50%;
-                left: calc(-1 * var(--tab-extension-closed, 51px));
+                left: calc(-1 * ${quizzesTabExtensionClosed}px);
                 transform: translateY(-50%) rotate(90deg);
-                background: linear-gradient(90deg, #ff0000 0%, #ff8000 8.33%, #ffff00 16.66%, #80ff00 25%, #00ff00 33.33%, #00ff80 41.66%, #00ffff 50%, #0080ff 58.33%, #0000ff 66.66%, #8000ff 75%, #ff00ff 83.33%, #ff0080 91.66%, #ff0000 100%);
-                background-size: 400% 400%;
-                animation: smoothRainbow var(--rainbow-speed, 3s) ease-in-out infinite;
+                background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 100%);
                 color: white;
-                padding: 18px 28px;
+                padding: var(--spacing-lg) var(--spacing-xl);
                 font-weight: 700;
                 font-size: 18px;
-                font-family: 'Inter', sans-serif;
-                border-top-left-radius: 14px;
-                border-top-right-radius: 14px;
+                border-top-left-radius: var(--border-radius);
+                border-top-right-radius: var(--border-radius);
                 cursor: pointer;
-                box-shadow: 0 4px 18px rgba(0,0,0,0.6);
-                transition: all var(--tab-animation-speed, 0.42s) cubic-bezier(.25,.8,.25,1);
-                letter-spacing: 0.8px;
-                text-shadow: 0px 2px 4px rgba(0,0,0,0.7);
+                box-shadow: var(--shadow-md);
+                transition: all ${quizzesTabAnimationSpeed}s cubic-bezier(0.25, 0.8, 0.25, 1);
+                letter-spacing: 1px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.5);
                 z-index: 12;
                 user-select: none;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                overflow: hidden;
+                border: 1px solid var(--glass-border);
             }
 
-            #edwin-quizzes-tab:hover {
-                transform: translateY(-50%) rotate(90deg) scale(1.06);
-                box-shadow: 0 6px 24px rgba(0,0,0,0.9);
-                filter: brightness(1.08) saturate(1.1);
+            .tab-glow {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+                transform: translateX(-100%);
+                transition: transform 0.6s ease;
             }
 
-            /* When quizzes overlay is open, move the tab further left using the configurable variable */
-            #edwin-panel.quizzes-open #edwin-quizzes-tab {
-                left: calc(-1 * var(--tab-extension-open, 90px));
-                transform: translateY(-50%) rotate(90deg);
+            .quizzes-tab:hover {
+                transform: translateY(-50%) rotate(90deg) scale(1.1);
+                box-shadow: var(--shadow-lg);
+                filter: brightness(1.2);
             }
 
-            @keyframes smoothRainbow {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
+            .quizzes-tab:hover .tab-glow {
+                transform: translateX(100%);
             }
 
-            /* Sections */
-            .edwin-section {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                flex: 1;
+            #edwin-panel.quizzes-open .quizzes-tab {
+                left: calc(-1 * ${Math.abs(parseInt(quizzesTabExtensionOpen))}px);
             }
 
-            #edwin-main-section {
-                height: 100%;
-                flex: 1;
-                position: relative;
-                z-index: 1;
-            }
-
-            /* QUIZZES SECTION - overlay inside the panel that is initially fully translated left (-100%) and then translates to 0 when .quizzes-open is set on the panel */
-
-            /* Default: completely hidden */
+            /* Enhanced Quizzes Section */
             #edwin-quizzes-section {
                 position: absolute;
                 top: 60px;
@@ -927,35 +1291,30 @@
                 width: 90%;
                 display: flex;
                 flex-direction: column;
-                background: linear-gradient(270deg, #0d1117, #0f2a44, #12312a, #14583a, #1b3f73, #1c2e2d, #204b7a, #142f3d);
-                background-size: 700% 700%;
-                animation: auroraQuizzes 12s ease-in-out infinite alternate;
-                border-top-left-radius: 18px;
-                border-top-right-radius: 18px;
-                box-shadow: 8px 0 40px rgba(0,0,0,0.7);
+                background: linear-gradient(135deg,
+                    rgba(13, 17, 23, 0.95) 0%,
+                    rgba(15, 42, 68, 0.95) 25%,
+                    rgba(18, 49, 42, 0.95) 50%,
+                    rgba(20, 88, 58, 0.95) 75%,
+                    rgba(27, 63, 115, 0.95) 100%);
+                backdrop-filter: blur(20px);
+                border-top-left-radius: var(--border-radius-lg);
+                border-top-right-radius: var(--border-radius-lg);
+                border: 1px solid var(--glass-border);
+                box-shadow: var(--shadow-lg);
                 transform: translateX(-100%);
-                transition: transform 0.45s cubic-bezier(.22,.9,.35,1), opacity 0.2s linear;
+                transition: transform 0.45s cubic-bezier(0.22, 0.9, 0.35, 1), opacity 0.2s linear;
                 z-index: 10;
                 pointer-events: none;
                 opacity: 0;
                 visibility: hidden;
             }
 
-            @keyframes auroraQuizzes {
-                0% { background-position: 0% 50%; }
-                25% { background-position: 50% 0%; }
-                50% { background-position: 100% 50%; }
-                75% { background-position: 50% 100%; }
-                100% { background-position: 0% 50%; }
-            }
-
-            /* While opening: slide in, but only after threshold made visible via JS */
             #edwin-panel.quizzes-visible #edwin-quizzes-section {
                 visibility: visible;
                 opacity: 1;
             }
 
-            /* While fully open */
             #edwin-panel.quizzes-open #edwin-quizzes-section {
                 transform: translateX(0);
                 pointer-events: auto;
@@ -965,121 +1324,111 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 16px 20px;
+                padding: var(--spacing-md) var(--spacing-lg);
                 font-size: 18px;
                 font-weight: 600;
-                background: rgba(13,17,23,0.9);
-                border-top-left-radius: 18px;
-                border-top-right-radius: 18px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                border-top-left-radius: var(--border-radius-lg);
+                border-top-right-radius: var(--border-radius-lg);
+                border-bottom: 1px solid var(--glass-border);
                 z-index: 11;
             }
 
             .edwin-quizzes-header button {
-                padding: 8px 14px;
+                padding: var(--spacing-sm) var(--spacing-md);
                 border: none;
-                border-radius: 10px;
-                background: linear-gradient(270deg,#00ffa3,#00e695);
-                color: #0a0d11;
+                border-radius: var(--border-radius-sm);
+                background: var(--primary-gradient);
+                color: white;
                 font-weight: 600;
-                font-size: 16px;
+                font-size: var(--base-font-size);
                 cursor: pointer;
                 z-index: 11;
+                transition: all var(--animation-normal);
             }
 
             .edwin-quizzes-header button:hover {
-                background: linear-gradient(270deg,#00e695,#00d88c);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
             }
 
             .edwin-quizzes-body {
                 flex: 1;
                 overflow-y: auto;
-                padding: 24px;
+                padding: var(--spacing-xl);
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
+                gap: var(--spacing-lg);
             }
 
-            #edwin-quizzes-list {
+            .edwin-quizzes-title-wrapper {
                 display: flex;
-                flex-direction: column;
-                gap: 18px;
+                align-items: center;
+                gap: var(--spacing-md);
+                margin-bottom: var(--spacing-md);
             }
 
-            .edwin-quiz-item {
-                background: #182c24;
-                padding: 18px 22px;
-                border-radius: 14px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.20);
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .quiz-title {
+            .edwin-quizzes-title-wrapper h2 {
+                margin: 0;
+                font-size: 1.8em;
                 font-weight: 700;
-                font-size: 1.25em;
-                letter-spacing: 0.2px;
+                background: var(--primary-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }
 
-            .quiz-desc {
-                font-size: 1.08em;
-                opacity: 0.88;
-                margin-bottom: 8px;
+            .section-description {
+                color: var(--text-secondary);
+                font-size: 1.1em;
+                margin-bottom: var(--spacing-lg);
             }
 
-            .quiz-action {
-                padding: 10px 18px;
-                border: none;
-                border-radius: 10px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 1em;
-                transition: background 0.2s;
-            }
-
-            .quiz-action:active {
-                transform: scale(0.97);
-            }
-
-            /* Progress Bar */
-            #edwin-progress-bar {
+            /* Enhanced Progress Bar */
+            .enhanced-progress {
                 position: relative;
-                width: 400px;
-                height: 36px;
-                background-color: #555;
-                border-radius: 9px;
+                width: 300px;
+                height: 32px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: var(--border-radius);
+                overflow: hidden;
+                display: flex;
+                border: 1px solid var(--glass-border);
+            }
+
+            .progress-segment {
+                flex: 1;
+                margin: 2px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.1);
+                transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
                 overflow: hidden;
             }
 
-            #edwin-progress-bar .filled {
-                height: 100%;
-                background-color: orange;
-                border-radius: 9px 0 0 9px;
-                transition: width 0.8s ease;
+            .progress-segment.filled {
+                background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+                animation: progressFill 0.8s ease-out;
             }
 
-            #edwin-progress-bar .slit {
+            .progress-segment.filled::after {
+                content: '';
                 position: absolute;
                 top: 0;
-                width: 2px;
+                left: -100%;
+                width: 100%;
                 height: 100%;
-                background-color: #0a0d11;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                animation: shimmer 2s infinite;
             }
-
-            #edwin-fire-gif {
-                display: block;
-                width: 0;
-                height: 0;
-                object-fit: contain;
-                margin-left: 8px;
-                pointer-events: none;
-            }
-
-            /* Quiz Options */
+            
+            /* Quiz Option Buttons */
             .quiz-option {
                 display: block;
                 width: 100%;
-                margin: 8px 0;
+                margin: 10px 0;
                 padding: 14px;
                 border-radius: 12px;
                 border: none;
@@ -1090,82 +1439,428 @@
                 cursor: pointer;
                 transition: all 0.2s;
             }
-
             .quiz-option:hover {
                 background: #2c2c34;
             }
 
-            .quiz-option:disabled {
-                cursor: default;
-                opacity: 0.8;
+
+            @keyframes shimmer {
+                0% { left: -100%; }
+                100% { left: 100%; }
             }
 
-            #quiz-explanation {
-                margin-top: 16px;
-                font-style: italic;
-            }
-
-            .quiz-return-btn {
-                padding: 12px 20px;
-                margin-top: 16px;
-                border: none;
-                border-radius: 12px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                color: #0a0d11;
-                background: linear-gradient(270deg,#00ffa3,#00e695);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-                transition: all 0.25s ease;
-            }
-
-            .quiz-return-btn:hover {
-                background: linear-gradient(270deg,#00e695,#00d88c);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 18px rgba(0,0,0,0.45);
-            }
-
-            .quiz-return-btn:active {
-                transform: scale(0.97);
-                box-shadow: 0 3px 8px rgba(0,0,0,0.35);
-            }
-
-            /* Streaks Section */
-            #edwin-streaks-section {
+            .fire-effect {
                 position: absolute;
-                top: 60px;
-                left: 4px;
-                height: 85%;
-                width: 90%;
-                background: linear-gradient(180deg, rgba(255,140,0,1) 0%, rgba(255,69,0,1) 15%, rgba(255,0,0,1) 30%, rgba(28,46,45,1) 31%, rgba(28,46,45,1) 100%) !important;
-                background-size: 100% 300% !important;
-                animation: streaksFire 5s ease-in-out infinite alternate !important;
-                border-top-left-radius: 18px;
-                border-top-right-radius: 18px;
-                box-shadow: 8px 0 40px rgba(0,0,0,0.7);
-                transform: translateX(-100%);
-                transition: transform 0.45s cubic-bezier(.22,.9,.35,1), opacity 0.2s linear;
-                z-index: 10;
+                left: 320px;
+                top: -10px;
+                width: 50px;
+                height: 50px;
+                display: none;
+                object-fit: contain;
                 pointer-events: none;
+                filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.7));
+            }
+
+            /* Enhanced Quiz Items */
+            #edwin-quizzes-list {
+                display: flex;
+                flex-direction: column;
+                gap: var(--spacing-lg);
+            }
+
+            .edwin-quiz-item {
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                padding: var(--spacing-xl);
+                border-radius: var(--border-radius-lg);
+                border: 1px solid var(--glass-border);
+                box-shadow: var(--shadow-sm);
+                display: flex;
+                flex-direction: column;
+                gap: var(--spacing-md);
+                transition: all var(--animation-normal);
+                cursor: pointer;
+                animation: slideInUp var(--animation-normal) ease-out;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .edwin-quiz-item::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .edwin-quiz-item:hover {
+                transform: translateY(-4px);
+                box-shadow: var(--shadow-md);
+                border-color: rgba(102, 126, 234, 0.3);
+            }
+
+            .edwin-quiz-item:hover::before {
+                left: 100%;
+            }
+
+            .quiz-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+
+            .quiz-title {
+                font-weight: 700;
+                font-size: 1.3em;
+                color: var(--text-primary);
+                line-height: 1.3;
+            }
+
+            .quiz-difficulty {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                border-radius: 20px;
+                font-size: 0.8em;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+            }
+
+            .quiz-difficulty.beginner {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                color: white;
+            }
+
+            .quiz-difficulty.intermediate {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+            }
+
+            .quiz-difficulty.advanced {
+                background: linear-gradient(135deg, #ff8a80 0%, #ff5722 100%);
+                color: white;
+            }
+
+            .quiz-desc {
+                font-size: 1.1em;
+                color: var(--text-secondary);
+                line-height: 1.5;
+            }
+
+            .quiz-card-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: var(--spacing-sm);
+            }
+
+            .quiz-action {
+                position: relative;
+                padding: var(--spacing-md) var(--spacing-xl);
+                border: none;
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 1em;
+                transition: all var(--animation-normal);
+                overflow: hidden;
+                background: var(--primary-gradient);
+                color: white;
+            }
+
+            .quiz-action.completed {
+                background: var(--success-gradient);
+            }
+
+            .button-glow {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 100%);
                 opacity: 0;
+                transition: opacity var(--animation-fast);
             }
 
-            @keyframes streaksFire {
-                0% { background-position: 50% 100%; }
-                100% { background-position: 50% 0%; }
+            .quiz-action:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
             }
 
-            #edwin-panel.streaks-visible #edwin-streaks-section {
-                transform: translateX(0);
-                pointer-events: auto;
+            .quiz-action:hover .button-glow {
                 opacity: 1;
             }
 
-            #edwin-streaks-bar {
-                margin: 12px auto;
-                height: 10px !important;
-                width: 75% !important;
-                box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+            .quiz-action:active {
+                transform: translateY(0) scale(0.98);
+            }
+
+            .completion-badge {
+                background: var(--success-gradient);
+                color: white;
+                padding: var(--spacing-xs) var(--spacing-md);
+                border-radius: 20px;
+                font-size: 0.9em;
+                font-weight: 600;
+                animation: bounceIn 0.6s ease-out;
+            }
+
+            /* Enhanced Streaks Section */
+            .streaks-container {
+                background: linear-gradient(180deg,
+                    rgba(255, 140, 0, 0.8) 0%,
+                    rgba(255, 69, 0, 0.8) 15%,
+                    rgba(255, 0, 0, 0.8) 30%,
+                    rgba(28, 46, 45, 0.95) 31%,
+                    rgba(28, 46, 45, 0.95) 100%) !important;
+                backdrop-filter: blur(20px) !important;
+            }
+
+            .streaks-body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                position: relative;
+            }
+
+            .edwin-streaks-bar {
+                display: flex;
+                gap: var(--spacing-sm);
+                margin: var(--spacing-xl) auto;
+                padding: var(--spacing-md);
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: var(--border-radius);
+                border: 1px solid var(--glass-border);
+                backdrop-filter: blur(8px);
+            }
+
+            .streak-segment {
+                width: 40px;
+                height: 20px;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.2);
+                transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .streak-segment.filled {
+                background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+                animation: progressFill 1s ease-out;
+            }
+
+            .streak-segment.filled::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+                animation: shimmer 3s infinite;
+            }
+
+            .streak-decoration {
+                position: absolute;
+                width: 120px;
+                height: 120px;
+                pointer-events: none;
+                user-select: none;
+                filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.3));
+                animation: float 3s ease-in-out infinite;
+            }
+
+            .streak-decoration.left {
+                top: 190px;
+                left: 200px;
+            }
+
+            .streak-decoration.right {
+                top: 185px;
+                right: 200px;
+                animation-delay: -1.5s;
+            }
+
+            @keyframes float {
+                0%, 100% { transform: translateY(0px) rotate(0deg); }
+                50% { transform: translateY(-10px) rotate(2deg); }
+            }
+
+            .streak-display {
+                position: relative;
+                width: 700px;
+                height: 400px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: var(--spacing-xl) 0;
+            }
+
+            .streak-fire {
+                position: absolute;
+                left: -200px;
+                top: -300px;
+                width: 700px;
+                height: 1000px;
+                object-fit: contain;
+                pointer-events: none;
+                filter: drop-shadow(0 0 40px rgba(255, 107, 53, 0.8));
+                animation: fireGlow 3s ease-in-out infinite alternate;
+            }
+
+            .streak-number {
+                position: absolute;
+                font-size: 200px;
+                font-weight: 900;
+                background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffd700 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 0 40px rgba(255, 107, 53, 0.5);
+                animation: glow 2s ease-in-out infinite alternate;
+                z-index: 10;
+            }
+
+            .streak-label {
+                font-size: 32px;
+                font-weight: 700;
+                background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: var(--spacing-xl);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+            }
+
+            /* Enhanced Settings Modal */
+            .settings-modal {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(12px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all var(--animation-normal);
+            }
+
+            .settings-modal.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .settings-content {
+                background: var(--panel-bg);
+                backdrop-filter: blur(20px);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-lg);
+                padding: var(--spacing-xl);
+                width: 400px;
+                max-width: 90vw;
+                animation: slideInUp var(--animation-normal) ease-out;
+            }
+
+            .settings-content h2 {
+                margin: 0 0 var(--spacing-lg) 0;
+                font-size: 1.8em;
+                font-weight: 700;
+                background: var(--primary-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .settings-group {
+                display: flex;
+                flex-direction: column;
+                gap: var(--spacing-lg);
+                margin-bottom: var(--spacing-xl);
+            }
+
+            .setting-item {
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-md);
+                font-size: var(--base-font-size);
+                color: var(--text-primary);
+                cursor: pointer;
+                padding: var(--spacing-md);
+                border-radius: var(--border-radius-sm);
+                transition: background var(--animation-fast);
+            }
+
+            .setting-item:hover {
+                background: var(--glass-bg);
+            }
+
+            .setting-item input[type="checkbox"] {
+                display: none;
+            }
+
+            .checkmark {
+                width: 20px;
+                height: 20px;
+                border: 2px solid var(--glass-border);
+                border-radius: 4px;
+                position: relative;
+                transition: all var(--animation-fast);
+            }
+
+            .setting-item input[type="checkbox"]:checked + .checkmark {
+                background: var(--primary-gradient);
+                border-color: transparent;
+            }
+
+            .setting-item input[type="checkbox"]:checked + .checkmark::after {
+                content: '✓';
+                position: absolute;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .setting-select {
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-sm);
+                color: var(--text-primary);
+                padding: var(--spacing-sm) var(--spacing-md);
+                font-size: var(--base-font-size);
+                cursor: pointer;
+                transition: all var(--animation-fast);
+            }
+
+            .setting-select:focus {
+                outline: none;
+                border-color: rgba(102, 126, 234, 0.5);
+            }
+
+            .settings-close {
+                width: 100%;
+                padding: var(--spacing-md);
+                border: none;
+                border-radius: var(--border-radius);
+                background: var(--primary-gradient);
+                color: white;
+                font-weight: 600;
+                font-size: var(--base-font-size);
+                cursor: pointer;
+                transition: all var(--animation-normal);
+            }
+
+            .settings-close:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
             }
 
             /* Responsive Design */
@@ -1182,14 +1877,64 @@
                     right: 10px;
                     height: 70%;
                 }
+
+                .edwin-quizzes-title-wrapper {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .enhanced-progress {
+                    width: 250px;
+                }
+
+                .streak-display {
+                    width: 300px;
+                    height: 300px;
+                }
+
+                .streak-number {
+                    font-size: 120px;
+                }
+
+                .streak-fire {
+                    width: 400px;
+                    height: 600px;
+                    left: -100px;
+                    top: -200px;
+                }
+            }
+
+            /* Accessibility Improvements */
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
+
+            @media (prefers-contrast: high) {
+                :root {
+                    --glass-bg: rgba(255, 255, 255, 0.15);
+                    --glass-border: rgba(255, 255, 255, 0.3);
+                    --text-secondary: rgba(255, 255, 255, 0.9);
+                }
+            }
+
+            /* Focus states for keyboard navigation */
+            button:focus-visible,
+            input:focus-visible,
+            [tabindex]:focus-visible {
+                outline: 2px solid rgba(102, 126, 234, 0.8);
+                outline-offset: 2px;
             }
         `;
 
         document.head.appendChild(style);
 
-        // Add Google Fonts
+        // Add Google Fonts for better typography
         const fontLink = document.createElement('link');
-        fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap';
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap';
         fontLink.rel = 'stylesheet';
         document.head.appendChild(fontLink);
     }
