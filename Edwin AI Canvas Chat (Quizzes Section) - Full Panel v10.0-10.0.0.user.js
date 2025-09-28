@@ -17,7 +17,7 @@
 
     // CONFIGURATION
     const customSentence = "Hello, what is the grade breakdown for this class?";
-    const wordDelay = 400;
+    const wordDelay = 200;
     const wordDelayVariance = 100;
     const initialTypingDelay = 2000;
     const panelMarginLeft = 0;
@@ -376,30 +376,72 @@
             }
         ];
 
-        // Quiz questions data
-        const quizQuestions = {
+        // ---------- QUIZZES QUESTIONS DATA ---------- //
+            const quizQuestions = {
                 1: [
                     {
                         question: "Which layer is responsible for routing in the OSI model?",
                         options: ["Application", "Network", "Transport", "Physical"],
                         correct: 1,
                         explanation: "The Network layer handles routing of packets between devices."
-                    }
+                    },
+                    {
+                        question: "IPv4 addresses are how many bits?",
+                        options: ["32", "64", "128", "16"],
+                        correct: 0,
+                        explanation: "IPv4 uses 32-bit addresses (4 bytes)."
+                    },
+                    {
+                        "question": "Which protocol is used to reliably deliver data across the internet?",
+                        "options": ["TCP", "UDP", "IP", "ICMP"],
+                        "correct": 0,
+                        "explanation": "TCP ensures reliable, ordered, and error-checked delivery of data streams."
+                    },
+                    {
+                        "question": "What is the default port number for HTTP?",
+                        "options": ["21", "25", "80", "443"],
+                        "correct": 2,
+                        "explanation": "HTTP typically operates over port 80, while HTTPS uses port 443."
+                    },
+                    {
+                        "question": "Which method is used in Ethernet to avoid collisions?",
+                        "options": ["TDMA", "FDMA", "CSMA/CD", "ALOHA"],
+                        "correct": 2,
+                        "explanation": "Ethernet uses Carrier Sense Multiple Access with Collision Detection (CSMA/CD)."
+                    },
+                    {
+                        "question": "What is the maximum length of a MAC address?",
+                        "options": ["32 bits", "48 bits", "64 bits", "128 bits"],
+                        "correct": 1,
+                        "explanation": "A MAC address is 48 bits long, usually shown as 12 hexadecimal digits."
+                    },
+                    {
+                        question: "Which protocol is used for sending email?",
+                        options: ["SMTP", "FTP", "SNMP", "IMAP"],
+                        correct: 0,
+                        explanation: "SMTP (Simple Mail Transfer Protocol) is used to send outgoing emails."
+                    },
+                  {
+                      question: "In networking, what does DNS primarily resolve?",
+                      options: ["IP to MAC", "Domain names to IP addresses", "Ports to services", "Protocols to layers"],
+                      correct: 1,
+                      explanation: "DNS translates human-readable domain names into IP addresses for routing."
+                  }
                 ],
                 2: [
                     {
-                        question: "Which protocol is used for retrieving emails from a server?",
-                        options: ["HTTP", "IMAP", "FTP", "SMTP"],
-                        correct: 1,
-                        explanation: "IMAP is the main protocol used to fetch emails from a server."
+                        question: "Which protocol is used by web browsers?",
+                        options: ["SMTP", "FTP", "HTTP", "DNS"],
+                        correct: 2,
+                        explanation: "HTTP is the protocol used by web browsers."
                     }
                 ],
                 3: [
                     {
-                        question: "Which protocol provides reliable, connection-oriented transport?",
-                        options: ["UDP", "TCP", "IP", "ICMP"],
-                        correct: 1,
-                        explanation: "TCP is connection-oriented and ensures reliable delivery."
+                        question: "Which protocol provides reliable transport?",
+                        options: ["UDP", "IP", "TCP", "ICMP"],
+                        correct: 2,
+                        explanation: "TCP provides reliable, ordered, and error-checked delivery."
                     }
                 ]
             };
@@ -438,7 +480,7 @@
             });
         }
 
-        function startQuiz(quizId, title) {
+function startQuiz(quizId, title) {
     const quizPlay = document.getElementById('edwin-quiz-play-section');
     const quizBody = document.getElementById('edwin-quiz-body');
     const quizTitle = document.getElementById('edwin-quiz-title');
@@ -450,38 +492,88 @@
 
     // Load quiz questions
     const questions = quizQuestions[quizId] || [];
-    questions.forEach((q, index) => {
-        const qEl = document.createElement('div');
-        qEl.className = 'quiz-question';
-        qEl.innerHTML = `
-            <div class="quiz-q-text">${index + 1}. ${q.question}</div>
-            <div class="quiz-options">
-                ${q.options.map((opt, i) => `
-                    <button class="quiz-option" data-correct="${i === q.correct}">
-                        ${opt}
-                    </button>
-                `).join('')}
-            </div>
-        `;
-        quizBody.appendChild(qEl);
-    });
+    let currentQuestionIndex = 0;
 
-    // Option click handling
-    quizBody.querySelectorAll('.quiz-option').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.dataset.correct === "true") {
-                btn.style.background = "linear-gradient(135deg, #4caf50, #2e7d32)";
-                alert("✅ Correct!\n\n" + questions[0].explanation);
-            } else {
-                btn.style.background = "linear-gradient(135deg, #f44336, #b71c1c)";
-                alert("❌ Incorrect.\n\n" + questions[0].explanation);
+    // Function to display one question at a time
+    function displayNextQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                // Quiz completed
+                quizBody.innerHTML = '<div class="quiz-completed">Quiz Completed! 🎉</div>';
+                return;
             }
-        });
-    });
 
-    // Hide quiz list section while playing
-    document.querySelector('.edwin-quizzes-body').style.display = 'none';
-}
+            const q = questions[currentQuestionIndex];
+            const qEl = document.createElement('div');
+            qEl.className = 'quiz-question';
+            qEl.style.opacity = '0';
+            qEl.style.transform = 'translateY(20px)';
+            qEl.innerHTML = `
+                <div class="quiz-q-text">${currentQuestionIndex + 1}. ${q.question}</div>
+                <div class="quiz-options">
+                    ${q.options.map((opt, i) => `
+                        <button class="quiz-option" data-correct="${i === q.correct}" data-explanation="${q.explanation}">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            // Clear previous question and add new one
+            quizBody.innerHTML = '';
+            quizBody.appendChild(qEl);
+
+            // Animate in the question
+            setTimeout(() => {
+                qEl.style.opacity = '1';
+                qEl.style.transform = 'translateY(0)';
+                qEl.style.transition = 'all 0.3s ease-out';
+            }, 100);
+
+            // Add click handlers for options
+            qEl.querySelectorAll('.quiz-option').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const isCorrect = btn.dataset.correct === 'true';
+                    const explanationText = btn.dataset.explanation;
+
+                    // 1. Style selected button
+                    if (isCorrect) {
+                        btn.style.background = 'linear-gradient(135deg, #4caf50, #2e7d32)';
+                    } else {
+                        btn.style.background = 'linear-gradient(135deg, #f44336, #b71c1c)';
+                    }
+
+                    // 2. Disable all options
+                    qEl.querySelectorAll('.quiz-option').forEach(option => {
+                        option.disabled = true;
+                        option.style.cursor = 'not-allowed';
+                        option.style.opacity = '0.6';
+                    });
+
+                    // 3. Insert explanation below the question
+                    let explanationEl = document.createElement('div');
+                    explanationEl.className = 'quiz-explanation';
+                    explanationEl.textContent = explanationText;
+                    explanationEl.style.marginTop = '12px';
+                    explanationEl.style.padding = '10px';
+                    explanationEl.style.background = 'rgba(0,0,0,0.1)';
+                    explanationEl.style.borderRadius = '8px';
+                    qEl.appendChild(explanationEl);
+
+                    // 4. Proceed to next question after delay
+                    setTimeout(() => {
+                        currentQuestionIndex++;
+                        displayNextQuestion();
+                    }, 3000);
+                    });
+            });
+        }
+
+        // Start with the first question
+        displayNextQuestion();
+
+        // Hide quiz list section while playing
+        document.querySelector('.edwin-quizzes-body').style.display = 'none';
+    }
 
 
         // Initialize quiz functionality
@@ -1237,6 +1329,17 @@
             .thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
             .thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
 
+            .quiz-explanation {
+                font-size: 1em;
+                color: var(--text-secondary);
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-sm);
+                padding: var(--spacing-sm) var(--spacing-md);
+                backdrop-filter: blur(8px);
+                }
+
+
             /* Enhanced Quizzes Tab */
             .quizzes-tab {
                 position: absolute;
@@ -1427,7 +1530,7 @@
                 background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
                 animation: shimmer 2s infinite;
             }
-            
+
             /* Quiz Option Buttons */
             .quiz-option {
                 display: block;
@@ -1932,6 +2035,26 @@
                 outline: 2px solid rgba(102, 126, 234, 0.8);
                 outline-offset: 2px;
             }
+
+            .quiz-completed {
+                text-align: center;
+                padding: 40px 20px;
+                font-size: 24px;
+                font-weight: 700;
+                background: var(--success-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                border: 2px solid var(--glass-border);
+                border-radius: var(--border-radius-lg);
+                background-color: var(--glass-bg);
+                backdrop-filter: blur(12px);
+            }
+
+            .quiz-option:disabled {
+                pointer-events: none;
+            }
+
         `;
 
         document.head.appendChild(style);
