@@ -1028,7 +1028,10 @@
             .input-wrapper {
                 position: relative;
                 flex-grow: 1;
+                flex-basis: 0;      /* 🔥 allows input to stretch */
+                display: flex;
             }
+
 
             .input-glow {
                 position: absolute;
@@ -1041,8 +1044,8 @@
             }
 
             .edwin-footer input {
-                flex: 1;
-                min-width: 0;
+                flex: 1;            /* 🔥 fully stretch inside wrapper */
+                min-width: 200px;   /* ensures input doesn’t collapse */
                 padding: var(--spacing-md) var(--spacing-lg);
                 border-radius: var(--border-radius);
                 border: 1px solid var(--glass-border);
@@ -1054,6 +1057,7 @@
                 position: relative;
                 z-index: 1;
             }
+
 
 
 
