@@ -11,7 +11,7 @@ from Modules.Users import register
 from Modules.Courses import newCourse
 from Modules.Courses import registerUserForCourse
 from Modules.ChatGPT import create_blank_conversation, get_user_conversation, ingest_pdf_to_snowflake, ingest_pptx_to_snowflake, start_new_thread
-from Modules.ChatGPT import ask_question
+from Modules.ChatGPT import ask_question, generate_quiz
 from Modules.Auth import login_user, register_user, validate_session, delete_session
 from Modules.CanvasAPI import sync_course_materials
 from InitDatabase import clean_database
@@ -238,8 +238,85 @@ def sendMessage():
         "message": message,
         "answer": answer
     }), 200
-    
-    
+
+@app.route('/generateQuiz', methods=['POST'])
+@cross_origin()
+def generateQuiz():
+    data = request.get_json()
+
+    # Extract values from frontend request
+    courseID = data.get("courseID")
+    topic = data.get("topic", "General Course Review")
+    difficulty = data.get("difficulty", "Intermediate")
+    num_questions = data.get("numQuestions", 8)
+
+    if not courseID:
+        return jsonify({"success": False, "message": "Missing courseID"}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
+    status, message, quiz_data = generate_quiz(
+        courseID,
+        topic,
+        difficulty,
+        num_questions,
+        connection
+    )
+    connection.close()
+
+    print(message)
+    if status:
+        print(f"Generated quiz: {quiz_data['title']}")
+
+    return jsonify({
+        "success": status,
+        "message": message,
+        "quiz": quiz_data
+    }), 200 if status else 500
+
+@app.route('/syncCanvasMaterials', methods=['POST'])
+@cross_origin()
+def syncCanvasMaterials():
+    data = request.get_json()
+
+    # Extract values from frontend request
+    courseID = data.get("courseID")
+    canvasToken = data.get("canvasToken")
+
+    if not courseID or not canvasToken:
+        return jsonify({"success": False, "message": "Missing courseID or canvasToken"}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
+    # Provide material ingestion functions
+    material_funcs = {
+        'pdf': ingest_pdf_to_snowflake,
+        'pptx': ingest_pptx_to_snowflake
+    }
+
+    status, message, stats = sync_course_materials(
+        courseID,
+        canvasToken,
+        connection,
+        material_funcs
+    )
+    connection.close()
+
+    print(message)
+    if status and stats:
+        print(f"Sync complete: {stats['ingested']} ingested, {stats['skipped']} skipped")
+
+    return jsonify({
+        "success": status,
+        "message": message,
+        "stats": stats
+    }), 200 if status else 500
+
+
 if __name__ == "__main__":
     #connection = get_db_connection()
     #status, message, error = ingest_pdf_to_snowflake("Lab1CSE434-2.pdf", 231849, connection)

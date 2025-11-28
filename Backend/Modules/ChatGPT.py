@@ -285,6 +285,105 @@ Edwin:"""
     return True, "Successful message!", answer
 
 
+# --------------------------
+# Generate Quiz Questions using Snowflake Cortex
+# --------------------------
+def generate_quiz(courseID, topic, difficulty, num_questions, connection, model=None):
+    """
+    Generate quiz questions using Snowflake Cortex AI based on course materials.
+
+    Args:
+        courseID: The course ID
+        topic: Topic/chapter for the quiz
+        difficulty: "Beginner", "Intermediate", or "Advanced"
+        num_questions: Number of questions to generate (default 8)
+        connection: Database connection
+        model: Optional Cortex model override
+
+    Returns:
+        (success, message, quiz_data)
+        quiz_data format: {
+            "title": "Quiz Title",
+            "description": "Quiz Description",
+            "questions": [
+                {
+                    "question": "Question text?",
+                    "options": ["Option A", "Option B", "Option C", "Option D"],
+                    "correct": 0,  # index of correct answer
+                    "explanation": "Why this is correct"
+                },
+                ...
+            ]
+        }
+    """
+    # Get course materials for context
+    baseline_context = get_baseline_context(courseID, connection, limit_chars=6000)
+
+    # Build quiz generation prompt
+    prompt = f"""{baseline_context}
+
+TASK: Generate a {difficulty} difficulty quiz with {num_questions} multiple choice questions about: {topic}
+
+REQUIREMENTS:
+1. Each question must have exactly 4 options
+2. Questions should test understanding, not just memorization
+3. Include detailed explanations for correct answers
+4. Base questions on the course materials provided above
+5. Make questions progressively harder within the difficulty level
+
+OUTPUT FORMAT (strict JSON only, no other text):
+{{
+    "title": "{topic}",
+    "description": "Brief description of what this quiz covers",
+    "questions": [
+        {{
+            "question": "Question text here?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct": 0,
+            "explanation": "Detailed explanation of why this answer is correct"
+        }}
+    ]
+}}
+
+Generate the quiz now:"""
+
+    # Use Snowflake Cortex to generate quiz
+    cortex_model = model or CORTEX_MODEL
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT SNOWFLAKE.CORTEX.COMPLETE(%s, %s)
+        """, (cortex_model, prompt))
+
+        result = cursor.fetchone()
+        response = result[0] if result else None
+
+        if not response:
+            cursor.close()
+            return False, "Failed to generate quiz", None
+
+        # Parse JSON response
+        import json
+
+        # Try to extract JSON from response (in case AI added extra text)
+        if '{' in response:
+            json_start = response.index('{')
+            json_end = response.rindex('}') + 1
+            json_str = response[json_start:json_end]
+            quiz_data = json.loads(json_str)
+        else:
+            cursor.close()
+            return False, "AI response was not valid JSON", None
+
+        cursor.close()
+        return True, "Quiz generated successfully", quiz_data
+
+    except Exception as e:
+        cursor.close()
+        return False, f"Error generating quiz: {str(e)}", None
+
+
 if __name__ == "__main__":
     from credentials import get_db_connection
     conn = get_db_connection()

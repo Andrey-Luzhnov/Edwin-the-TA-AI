@@ -338,6 +338,20 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="settings-divider"></div>
+
+                    <div class="settings-group">
+                        <h3 class="settings-section-title">Canvas Materials Sync</h3>
+                        <p class="settings-description">Sync course materials (PDFs, PPTXs) from Canvas to Edwin AI</p>
+                        <div class="setting-item" style="flex-direction: column; align-items: stretch;">
+                            <label>Canvas API Token:</label>
+                            <input type="password" id="canvas-token-input" placeholder="Enter Canvas API token" class="setting-input">
+                            <button id="sync-materials-btn" class="sync-button">Sync Course Materials</button>
+                            <div id="sync-status" class="sync-status"></div>
+                        </div>
+                    </div>
+
                     <button id="close-settings" class="settings-close">Close</button>
                 </div>
             </div>
@@ -374,123 +388,118 @@
         };
     }
 
+    async function generateQuizFromBackend(topic, difficulty, numQuestions = 8) {
+        try {
+            const response = await fetch(`${BACKEND_BASE_URL}/generateQuiz`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    courseID: COURSE_ID,
+                    topic: topic,
+                    difficulty: difficulty,
+                    numQuestions: numQuestions
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                return data.quiz;
+            } else {
+                console.error('Failed to generate quiz:', data.message);
+                return null;
+            }
+        } catch (error) {
+            console.error('Network error generating quiz:', error);
+            return null;
+        }
+    }
+
+    async function syncCanvasMaterials(canvasToken) {
+        try {
+            const response = await fetch(`${BACKEND_BASE_URL}/syncCanvasMaterials`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    courseID: COURSE_ID,
+                    canvasToken: canvasToken
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                return {
+                    success: true,
+                    message: data.message,
+                    stats: data.stats
+                };
+            } else {
+                return {
+                    success: false,
+                    message: data.message || 'Failed to sync materials'
+                };
+            }
+        } catch (error) {
+            console.error('Network error syncing materials:', error);
+            return {
+                success: false,
+                message: 'Network error during sync'
+            };
+        }
+    }
+
     function initializeQuizzes() {
-        // Quiz data
-        const quizzes = [
+        // Quiz definitions - will be generated dynamically
+        const quizTopics = [
             {
                 id: 1,
-                title: "Chapter 1: Computer Networks and the Internet",
-                description: "Covers OSI model, basic protocols, IPv4, and IP addressing.",
-                completed: localStorage.getItem('edwin_quiz_1') === 'true',
-                difficulty: "Beginner"
+                topic: "Computer Networks and the Internet",
+                difficulty: "Beginner",
+                numQuestions: 8
             },
             {
                 id: 2,
-                title: "Chapter 2: Application Layer",
-                description: "Focuses on static/dynamic routing, subnetting, routing tables.",
-                completed: localStorage.getItem('edwin_quiz_2') === 'true',
-                difficulty: "Intermediate"
+                topic: "Application Layer Protocols",
+                difficulty: "Intermediate",
+                numQuestions: 8
             },
             {
                 id: 3,
-                title: "Chapter 3: Transport Layer",
-                description: "Application layer protocols, socket programming, TCP vs UDP.",
-                completed: localStorage.getItem('edwin_quiz_3') === 'true',
-                difficulty: "Advanced"
+                topic: "Transport Layer - TCP and UDP",
+                difficulty: "Advanced",
+                numQuestions: 8
             }
         ];
 
-        // ---------- QUIZZES QUESTIONS DATA ---------- //
-            const quizQuestions = {
-                1: [
-                    {
-                        question: "Which layer is responsible for routing in the OSI model?",
-                        options: ["Application", "Network", "Transport", "Physical"],
-                        correct: 1,
-                        explanation: "The Network layer handles routing of packets between devices."
-                    },
-                    {
-                        question: "IPv4 addresses are how many bits?",
-                        options: ["32", "64", "128", "16"],
-                        correct: 0,
-                        explanation: "IPv4 uses 32-bit addresses (4 bytes)."
-                    },
-                    {
-                        "question": "Which protocol is used to reliably deliver data across the internet?",
-                        "options": ["TCP", "UDP", "IP", "ICMP"],
-                        "correct": 0,
-                        "explanation": "TCP ensures reliable, ordered, and error-checked delivery of data streams."
-                    },
-                    {
-                        "question": "What is the default port number for HTTP?",
-                        "options": ["21", "25", "80", "443"],
-                        "correct": 2,
-                        "explanation": "HTTP typically operates over port 80, while HTTPS uses port 443."
-                    },
-                    {
-                        "question": "Which method is used in Ethernet to avoid collisions?",
-                        "options": ["TDMA", "FDMA", "CSMA/CD", "ALOHA"],
-                        "correct": 2,
-                        "explanation": "Ethernet uses Carrier Sense Multiple Access with Collision Detection (CSMA/CD)."
-                    },
-                    {
-                        "question": "What is the maximum length of a MAC address?",
-                        "options": ["32 bits", "48 bits", "64 bits", "128 bits"],
-                        "correct": 1,
-                        "explanation": "A MAC address is 48 bits long, usually shown as 12 hexadecimal digits."
-                    },
-                    {
-                        question: "Which protocol is used for sending email?",
-                        options: ["SMTP", "FTP", "SNMP", "IMAP"],
-                        correct: 0,
-                        explanation: "SMTP (Simple Mail Transfer Protocol) is used to send outgoing emails."
-                    },
-                  {
-                      question: "In networking, what does DNS primarily resolve?",
-                      options: ["IP to MAC", "Domain names to IP addresses", "Ports to services", "Protocols to layers"],
-                      correct: 1,
-                      explanation: "DNS translates human-readable domain names into IP addresses for routing."
-                  }
-                ],
-                2: [
-                    {
-                        question: "Which protocol is used by web browsers?",
-                        options: ["SMTP", "FTP", "HTTP", "DNS"],
-                        correct: 2,
-                        explanation: "HTTP is the protocol used by web browsers."
-                    }
-                ],
-                3: [
-                    {
-                        question: "Which protocol provides reliable transport?",
-                        options: ["UDP", "IP", "TCP", "ICMP"],
-                        correct: 2,
-                        explanation: "TCP provides reliable, ordered, and error-checked delivery."
-                    }
-                ]
-            };
-
+        // Store quiz topics for dynamic generation
+        window.edwinQuizTopics = quizTopics;
 
         // Enhanced quiz rendering
         function renderQuizzesList() {
             const list = document.getElementById('edwin-quizzes-list');
             list.innerHTML = '';
 
-            quizzes.forEach((q, index) => {
+            quizTopics.forEach((q, index) => {
+                const completed = localStorage.getItem(`edwin_quiz_${q.id}`) === 'true';
                 const item = document.createElement('div');
                 item.className = 'edwin-quiz-item';
                 item.innerHTML = `
                     <div class="quiz-card-header">
-                        <div class="quiz-title">${q.title}</div>
+                        <div class="quiz-title">${q.topic}</div>
                         <div class="quiz-difficulty ${q.difficulty.toLowerCase()}">${q.difficulty}</div>
                     </div>
-                    <div class="quiz-desc">${q.description}</div>
+                    <div class="quiz-desc">AI-generated quiz with ${q.numQuestions} questions</div>
                     <div class="quiz-card-footer">
-                        <button class="quiz-action ${q.completed ? 'completed' : ''}" data-quiz-id="${q.id}">
-                            ${q.completed ? '✓ Retake Quiz' : 'Take Quiz'}
+                        <button class="quiz-action ${completed ? 'completed' : ''}" data-quiz-id="${q.id}">
+                            ${completed ? '✓ Retake Quiz' : 'Generate & Take Quiz'}
                             <div class="button-glow"></div>
                         </button>
-                        ${q.completed ? '<div class="completion-badge">Completed!</div>' : ''}
+                        ${completed ? '<div class="completion-badge">Completed!</div>' : ''}
                     </div>
                 `;
 
@@ -498,13 +507,28 @@
                 item.style.animationDelay = `${index * 0.1}s`;
 
                 const actionBtn = item.querySelector('.quiz-action');
-                actionBtn.addEventListener('click', () => startQuiz(q.id, q.title));
+                actionBtn.addEventListener('click', async () => {
+                    // Show loading state
+                    actionBtn.disabled = true;
+                    actionBtn.textContent = 'Generating Quiz...';
+
+                    // Generate quiz from backend
+                    const quizData = await generateQuizFromBackend(q.topic, q.difficulty, q.numQuestions);
+
+                    if (quizData) {
+                        startQuiz(q.id, quizData.title, quizData.questions);
+                    } else {
+                        actionBtn.disabled = false;
+                        actionBtn.textContent = completed ? '✓ Retake Quiz' : 'Generate & Take Quiz';
+                        alert('Failed to generate quiz. Please try again.');
+                    }
+                });
 
                 list.appendChild(item);
             });
         }
 
-function startQuiz(quizId, title) {
+function startQuiz(quizId, title, questions) {
     const quizPlay = document.getElementById('edwin-quiz-play-section');
     const quizBody = document.getElementById('edwin-quiz-body');
     const quizTitle = document.getElementById('edwin-quiz-title');
@@ -513,15 +537,13 @@ function startQuiz(quizId, title) {
     quizPlay.style.display = 'block';
     quizTitle.textContent = title;
     quizBody.innerHTML = '';
-
-    // Load quiz questions
-    const questions = quizQuestions[quizId] || [];
     let currentQuestionIndex = 0;
 
     // Function to display one question at a time
     function displayNextQuestion() {
             if (currentQuestionIndex >= questions.length) {
-                // Quiz completed
+                // Quiz completed - mark as completed in localStorage
+                localStorage.setItem(`edwin_quiz_${quizId}`, 'true');
                 quizBody.innerHTML = '<div class="quiz-completed">Quiz Completed! 🎉</div>';
                 return;
             }
@@ -877,6 +899,59 @@ function startQuiz(quizId, title) {
         document.getElementById('text-size').addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--base-font-size', e.target.value + 'px');
         });
+
+        // Canvas materials sync handler
+        document.getElementById('sync-materials-btn').addEventListener('click', async () => {
+            const canvasToken = document.getElementById('canvas-token-input').value;
+            const statusDiv = document.getElementById('sync-status');
+            const syncBtn = document.getElementById('sync-materials-btn');
+
+            if (!canvasToken) {
+                statusDiv.textContent = 'Please enter Canvas API token';
+                statusDiv.className = 'sync-status error';
+                return;
+            }
+
+            if (!COURSE_ID) {
+                statusDiv.textContent = 'Please navigate to a Canvas course page';
+                statusDiv.className = 'sync-status error';
+                return;
+            }
+
+            // Show loading state
+            syncBtn.disabled = true;
+            syncBtn.textContent = 'Syncing...';
+            statusDiv.textContent = 'Fetching materials from Canvas...';
+            statusDiv.className = 'sync-status loading';
+
+            try {
+                const result = await syncCanvasMaterials(canvasToken);
+
+                if (result.success) {
+                    const stats = result.stats;
+                    statusDiv.textContent = `✓ ${result.message} (${stats.ingested} new, ${stats.skipped} skipped)`;
+                    statusDiv.className = 'sync-status success';
+
+                    // Save token to localStorage for convenience
+                    localStorage.setItem('edwin_canvas_token', canvasToken);
+                } else {
+                    statusDiv.textContent = `✗ ${result.message}`;
+                    statusDiv.className = 'sync-status error';
+                }
+            } catch (error) {
+                statusDiv.textContent = `✗ Error: ${error.message}`;
+                statusDiv.className = 'sync-status error';
+            } finally {
+                syncBtn.disabled = false;
+                syncBtn.textContent = 'Sync Course Materials';
+            }
+        });
+
+        // Load saved Canvas token if exists
+        const savedToken = localStorage.getItem('edwin_canvas_token');
+        if (savedToken) {
+            document.getElementById('canvas-token-input').value = savedToken;
+        }
     }
 
     function initializeStyles() {
@@ -1992,6 +2067,97 @@ function startQuiz(quizId, title) {
             .settings-close:hover {
                 transform: translateY(-2px);
                 box-shadow: var(--shadow-md);
+            }
+
+            .settings-divider {
+                height: 1px;
+                background: var(--glass-border);
+                margin: var(--spacing-lg) 0;
+            }
+
+            .settings-section-title {
+                font-size: 1.2em;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin: 0 0 var(--spacing-sm) 0;
+            }
+
+            .settings-description {
+                font-size: 0.9em;
+                color: var(--text-muted);
+                margin: 0 0 var(--spacing-md) 0;
+            }
+
+            .setting-input {
+                width: 100%;
+                padding: var(--spacing-md);
+                margin: var(--spacing-sm) 0;
+                border-radius: var(--border-radius-sm);
+                border: 1px solid var(--glass-border);
+                background: var(--glass-bg);
+                color: var(--text-primary);
+                font-size: var(--base-font-size);
+                transition: all var(--animation-fast);
+            }
+
+            .setting-input:focus {
+                outline: none;
+                border-color: rgba(102, 126, 234, 0.5);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            .sync-button {
+                width: 100%;
+                padding: var(--spacing-md);
+                margin-top: var(--spacing-sm);
+                border: none;
+                border-radius: var(--border-radius);
+                background: var(--primary-gradient);
+                color: white;
+                font-weight: 600;
+                font-size: var(--base-font-size);
+                cursor: pointer;
+                transition: all var(--animation-normal);
+            }
+
+            .sync-button:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+            .sync-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .sync-status {
+                margin-top: var(--spacing-sm);
+                padding: var(--spacing-sm);
+                border-radius: var(--border-radius-sm);
+                font-size: 0.9em;
+                text-align: center;
+                display: none;
+            }
+
+            .sync-status.success {
+                display: block;
+                background: rgba(76, 175, 80, 0.2);
+                color: #4caf50;
+                border: 1px solid rgba(76, 175, 80, 0.3);
+            }
+
+            .sync-status.error {
+                display: block;
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+                border: 1px solid rgba(244, 67, 54, 0.3);
+            }
+
+            .sync-status.loading {
+                display: block;
+                background: rgba(255, 152, 0, 0.2);
+                color: #ff9800;
+                border: 1px solid rgba(255, 152, 0, 0.3);
             }
 
             /* Responsive Design */
