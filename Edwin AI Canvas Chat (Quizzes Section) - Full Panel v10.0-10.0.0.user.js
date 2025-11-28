@@ -12,8 +12,15 @@
 
     // BACKEND CONFIGURATION
     const BACKEND_BASE_URL = 'http://localhost:5000';
-    const USER_ID = 1;
-    const COURSE_ID = 231849;
+    const USER_ID = 1;  // Hardcoded for now
+
+    // Extract course ID from Canvas URL
+    function getCourseIdFromURL() {
+        const match = window.location.pathname.match(/\/courses\/(\d+)/);
+        return match ? parseInt(match[1]) : null;
+    }
+
+    const COURSE_ID = getCourseIdFromURL();
 
     // CONFIGURATION
     const customSentence = "Hello, what is the grade breakdown for this class?";
@@ -179,6 +186,30 @@
                 a.style.transform = 'translateY(0) scale(0.98)';
             };
 
+            // Add click handler directly to button
+            a.onclick = (e) => {
+                e.preventDefault();
+                console.log('Edwin AI: Button clicked!');
+
+                // Check if course ID is detected
+                if (!COURSE_ID) {
+                    alert('Please navigate to a Canvas course page to use Edwin AI');
+                    return;
+                }
+
+                const panel = document.getElementById('edwin-panel');
+                if (panel) {
+                    panel.classList.add('open');
+
+                    // Auto-focus input for better UX
+                    setTimeout(() => {
+                        document.getElementById('edwin-input').focus();
+                    }, 500);
+                } else {
+                    console.log('Edwin AI: Panel not found, need to initialize');
+                }
+            };
+
             li.appendChild(a);
             nav.appendChild(li);
 
@@ -330,24 +361,17 @@
         initializeInteractions();
         initializeStyles();
 
-        // CREATE NEW CONVERSATION WHEN PANEL OPENS
-        document.getElementById('edwin-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            panel.classList.add('open');
+        // Create new conversation when panel opens
+        const edwinBtn = document.getElementById('edwin-btn');
+        const originalOnClick = edwinBtn.onclick;
+        edwinBtn.onclick = async (e) => {
+            originalOnClick(e);
 
-            // Auto-focus input for better UX
-            setTimeout(() => {
-                document.getElementById('edwin-input').focus();
-            }, 500);
-
-            // ensure quizzes overlay is fully closed and hidden when opening main panel
-            panel.classList.remove('quizzes-open', 'quizzes-visible');
-            const quizzesTab = panel.querySelector('#edwin-quizzes-tab');
-            quizzesTab.setAttribute('aria-pressed', 'false');
-
-            // Create new conversation when panel opens
-            await createNewConversation();
-        });
+            // Create new conversation if panel was opened
+            if (COURSE_ID) {
+                await createNewConversation();
+            }
+        };
     }
 
     function initializeQuizzes() {

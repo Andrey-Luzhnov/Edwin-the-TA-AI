@@ -1,12 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import mysql.connector
-from mysql.connector import Error
-from flask_cors import cross_origin
-import random
-import smtplib
-import sys
-import os
+from flask_cors import CORS, cross_origin
 import snowflake.connector
 
 from Modules.CourseMaterials import uploadCourseMaterial
@@ -19,10 +12,143 @@ from Modules.Courses import newCourse
 from Modules.Courses import registerUserForCourse
 from Modules.ChatGPT import create_blank_conversation, get_user_conversation, ingest_pdf_to_snowflake, ingest_pptx_to_snowflake, start_new_thread
 from Modules.ChatGPT import ask_question
+from Modules.Auth import login_user, register_user, validate_session, delete_session
+from Modules.CanvasAPI import sync_course_materials
 from InitDatabase import clean_database
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Authentication Endpoints
+@app.route('/api/register', methods=['POST'])
+@cross_origin()
+def register_endpoint():
+    data = request.get_json()
+    canvas_id = data.get("canvasId")
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not all([canvas_id, name, email, password]):
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
+    success, message, user_id = register_user(canvas_id, name, email, password, connection)
+    connection.close()
+
+    if success:
+        return jsonify({"success": True, "message": message, "userId": user_id}), 201
+    else:
+        return jsonify({"success": False, "message": message}), 400
+
+@app.route('/api/login', methods=['POST'])
+@cross_origin()
+def login_endpoint():
+    data = request.get_json()
+    canvas_id = data.get("canvasId")
+    password = data.get("password")
+
+    if not canvas_id or not password:
+        return jsonify({"success": False, "message": "Missing canvasId or password"}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
+    success, message, user_id, session_token = login_user(canvas_id, password, connection)
+    connection.close()
+
+    if success:
+        return jsonify({
+            "success": True,
+            "message": message,
+            "userId": user_id,
+            "sessionToken": session_token
+        }), 200
+    else:
+        return jsonify({"success": False, "message": message}), 401
+
+@app.route('/api/logout', methods=['POST'])
+@cross_origin()
+def logout_endpoint():
+    data = request.get_json()
+    session_token = data.get("sessionToken")
+
+    if not session_token:
+        return jsonify({"success": False, "message": "Missing session token"}), 400
+
+    success = delete_session(session_token)
+
+    if success:
+        return jsonify({"success": True, "message": "Logged out successfully"}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid session"}), 400
+
+@app.route('/api/validateSession', methods=['POST'])
+@cross_origin()
+def validate_session_endpoint():
+    data = request.get_json()
+    session_token = data.get("sessionToken")
+
+    if not session_token:
+        return jsonify({"success": False, "message": "Missing session token"}), 400
+
+    user_id = validate_session(session_token)
+
+    if user_id:
+        return jsonify({"success": True, "userId": user_id}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid or expired session"}), 401
+
+# Canvas Integration Endpoints
+@app.route('/api/syncMaterials', methods=['POST'])
+@cross_origin()
+def sync_materials_endpoint():
+    data = request.get_json()
+    session_token = data.get("sessionToken")
+    course_id = data.get("courseID")
+    canvas_token = data.get("canvasToken")
+
+    # Validate session
+    user_id = validate_session(session_token)
+    if not user_id:
+        return jsonify({"success": False, "message": "Invalid or expired session"}), 401
+
+    if not course_id or not canvas_token:
+        return jsonify({"success": False, "message": "Missing courseID or canvasToken"}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
+    # Define material ingestion functions
+    material_funcs = {
+        'pdf': ingest_pdf_to_snowflake,
+        'pptx': ingest_pptx_to_snowflake
+    }
+
+    success, message, stats = sync_course_materials(
+        course_id,
+        canvas_token,
+        connection,
+        material_funcs
+    )
+    connection.close()
+
+    if success:
+        return jsonify({
+            "success": True,
+            "message": message,
+            "stats": stats
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "message": message
+        }), 500
 
 @app.route('/register', methods=['POST'])
 @cross_origin()
@@ -50,13 +176,26 @@ def newConversation():
     data = request.get_json()
     userID = data.get("userID")
     courseID = data.get("courseID")
-    
+
+    if not userID or not courseID:
+        return jsonify({"success": False, "message": "Missing userID or courseID"}), 400
+
     connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
     convID = create_blank_conversation(courseID, connection)
     status, message, convID = start_new_thread(userID, courseID, connection)
+    connection.close()
+
     print(message)
     print("Assigned conversation ID:", convID)
-    return True, "Successful new conversation!", 200
+
+    return jsonify({
+        "success": status,
+        "message": message,
+        "conversationId": convID
+    }), 200 if status else 500
 
 def grab_quiz_question():
     data = request.get_json()
@@ -66,6 +205,7 @@ def grab_quiz_question():
     connection = get_db_connection()
     
 @app.route('/sendMessage', methods=['POST'])
+@cross_origin()
 def sendMessage():
     data = request.get_json()
 
@@ -74,13 +214,20 @@ def sendMessage():
     courseID = data.get("courseID")
     question = data.get("question")
 
+    if not userID or not question or not courseID:
+        return jsonify({"success": False, "message": "Missing userID, question, or courseID"}), 400
+
     connection = get_db_connection()
+    if not connection:
+        return jsonify({"success": False, "message": "Database connection error"}), 500
+
     status, message, answer = ask_question(
         userID,
         courseID,
         question,
         connection
     )
+    connection.close()
 
     print(message)
     print(question)

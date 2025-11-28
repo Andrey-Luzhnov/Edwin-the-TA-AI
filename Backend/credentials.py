@@ -1,40 +1,29 @@
-import datetime
-import uuid
-import mysql.connector
-from mysql.connector import Error
 import snowflake.connector
+from snowflake.connector import errors as sf_errors
 
-def get_db_connectionOLD():
-    try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Jmoney1231$#2!",
-            database="Edwin"
-        )
-        return connection
-    except Error as e:
-        print(f"Error: {e}")
-        return None
-    
-    
 def get_db_connection():
+    """
+    Creates and returns a Snowflake connection for the Edwin backend.
+    Update the password on your local machine.
+    """
     try:
         connection = snowflake.connector.connect(
-            user='USER',
-            password='PASSWORD',
-            account='ACCOUNT',
-            warehouse='WAREHOUSE',
-            database='DATABASE',
-            schema='PUBLIC'
+            user="JMONEY",                 # Your Snowflake username
+            password="Mexinbanu12345",    # Your Snowflake password (local only)
+            account="GVCKEEZ-CDB98251",   # Account identifier from URL
+            warehouse="EDWIN_WH",         # Warehouse you created
+            database="EDWIN_DB",          # Your database
+            schema="PUBLIC"               # Default schema
         )
         return connection
-    except Error as e:
-        print(f"Error: {e}")
+
+    except sf_errors.Error as e:
+        print(f"❌ Snowflake Connection Error: {e}")
         return None
-    
-        
-# Example Usage:
+
+
+# Optional manual test
 if __name__ == "__main__":
-    # Test the functions here if needed
-    pass
+    conn = get_db_connection()
+    if conn:
+        print("✅ Connected to Snowflake successfully!")

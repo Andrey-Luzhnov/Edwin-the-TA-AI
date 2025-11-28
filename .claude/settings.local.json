@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(findstr:*)",
+      "Bash(pip install:*)",
+      "Bash(python InitDatabase.py:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(python:*)",
+      "Bash(py -3.11 -m pip install -r requirements.txt)",
+      "Bash(py -3.11:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(dir:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
