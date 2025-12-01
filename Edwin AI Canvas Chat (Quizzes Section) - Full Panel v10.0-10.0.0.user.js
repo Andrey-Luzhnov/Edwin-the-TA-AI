@@ -238,8 +238,8 @@
                 <div class="edwin-body">
                     <div id="edwin-greeting" class="edwin-greeting-card">
                         <div class="greeting-avatar">🤖</div>
-                        <h1>Hello, Andrey.</h1>
-                        <p>What questions do you have regarding CSE 434?</p>
+                        <h1>Hello, I am here to assist you</h1>
+                        
                         <p id="edwin-subtext">I have access to every lecture, assignment, and presentation.</p>
                     </div>
                     <div id="edwin-chat"></div>
