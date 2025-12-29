@@ -13,7 +13,18 @@
       "Bash(timeout 5 bash:*)",
       "Bash(dir:*)",
       "Bash(wc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(.venvScriptspython.exe --version)",
+      "Bash(\".venv/Scripts/python.exe\" --version)",
+      "Bash(.venv/Scripts/python.exe Backend/!database.py)",
+      "Bash(curl:*)",
+      "Bash(git restore:*)",
+      "Bash(node build.js:*)",
+      "Bash(ls:*)",
+      "Bash(timeout 5 python !database.py)",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

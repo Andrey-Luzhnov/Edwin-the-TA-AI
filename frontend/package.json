@@ -1,0 +1,12 @@
+{
+  "name": "edwin-ai-frontend",
+  "version": "11.0.0",
+  "description": "Edwin AI Tampermonkey userscript build system",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "keywords": ["tampermonkey", "canvas", "ai"],
+  "author": "Edwin AI Team",
+  "license": "MIT"
+}

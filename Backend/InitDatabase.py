@@ -17,7 +17,7 @@ def initialize_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS edwin_messages (
             conv_id VARCHAR(255) NOT NULL,
-            user_id INT,
+            user_id VARCHAR(255),
             userorAI BOOLEAN,
             message STRING,
             created_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP
@@ -50,25 +50,22 @@ def initialize_database():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_courses (
-            user_id INT NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
             course_id INT NOT NULL,
             role STRING DEFAULT 'student',
-            PRIMARY KEY (user_id, course_id),
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+            PRIMARY KEY (user_id, course_id)
         );
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conversations (              
+        CREATE TABLE IF NOT EXISTS conversations (
             id INT AUTOINCREMENT PRIMARY KEY,
             course_id INT NOT NULL,
-            user_id INT NULL, -- allow NULL for unassigned conversations
+            user_id VARCHAR(255) NULL, -- allow NULL for unassigned conversations
             conv_id VARCHAR(255) NOT NULL, -- store OpenAI conversation id
             created_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP,
             is_assigned BOOLEAN DEFAULT FALSE,
-            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
         );
     """)
 
@@ -79,6 +76,7 @@ def initialize_database():
             title VARCHAR(255),
             content STRING,         -- raw text (syllabus, notes, extracted PDFs, etc.)
             file_url VARCHAR(500),  -- optional link to storage
+            source_url VARCHAR(500),  -- URL of scraped Canvas page
             created_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
         );
@@ -115,13 +113,15 @@ def initialize_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_quiz_attempts (
             attempt_id INT AUTOINCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            question_id INT NOT NULL,
-            selected_option CHAR(1),
+            user_id VARCHAR(255) NOT NULL,
+            course_id INT,
+            question_id INT,
+            question_text STRING,
+            quiz_title STRING,
+            selected_option INT,
+            correct_option INT,
             is_correct BOOLEAN,
-            seen_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (question_id) REFERENCES quiz_questions(question_id) ON DELETE CASCADE
+            created_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP
         );
     """)
 

@@ -1,3 +1,6 @@
+# Python 3.14 compatibility fixes
+import python314_compat
+
 import snowflake.connector
 from snowflake.connector import errors as sf_errors
 
@@ -8,9 +11,9 @@ def get_db_connection():
     """
     try:
         connection = snowflake.connector.connect(
-            user="JMONEY",                 # Your Snowflake username
-            password="Mexinbanu12345",    # Your Snowflake password (local only)
-            account="GVCKEEZ-CDB98251",   # Account identifier from URL
+            user="jahangir",              # Your Snowflake username
+            password="Mexinbanu1!@#$",    # Your Snowflake password
+            account="GJXBRDO-TRB77657",   # Account identifier from URL
             warehouse="EDWIN_WH",         # Warehouse you created
             database="EDWIN_DB",          # Your database
             schema="PUBLIC"               # Default schema

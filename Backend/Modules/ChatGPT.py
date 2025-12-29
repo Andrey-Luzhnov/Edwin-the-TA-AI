@@ -11,21 +11,21 @@ CORTEX_MODEL = "llama3-70b"  # Options: llama3-70b, llama3-8b, mistral-large, mi
 # -----------------------------
 # Helper: Build baseline context
 # -----------------------------
-def get_baseline_context(courseID, connection, limit_chars=4000):
+def get_baseline_context(courseID, connection, limit_chars=800):
     """
     Fetch course materials from DB and build system baseline context.
+    OPTIMIZED: Reduced to 800 chars to avoid Snowflake 8192 token limit.
     """
     cursor = connection.cursor()
+    # OPTIMIZATION: Only fetch 3 most recent materials
     cursor.execute(
-        "SELECT title, content FROM course_materials WHERE course_id = %s",
+        "SELECT title, content FROM course_materials WHERE course_id = %s ORDER BY created_at DESC LIMIT 3",
         (courseID,)
     )
     materials = cursor.fetchall()
     cursor.close()
 
-    baseline = f"""You are Edwin, the TA AI for course {courseID}.
-
-Always give concise, helpful answers. Reference course materials when relevant. Give longer answers if you believe it will benefit the student. Add extra details about questions they are asking. Anything for them to get an A. It is okay to go into full depth, extra extra detail about absolutely everything. Paragraphs are great. GO INTO AS SPECIFIC AS POSSIBLE. EVERYTHING YOU KNOW.
+    baseline = f"""You are Edwin, TA AI for course {courseID}. Give helpful answers. Reference course materials when relevant.
 
 COURSE MATERIALS:
 """
@@ -33,41 +33,36 @@ COURSE MATERIALS:
     for m in materials:
         title, content = m
         if content:
-            baseline += f"\n--- {title} ---\n{content[:limit_chars]}\n"
+            baseline += f"\n{title}: {content[:limit_chars]}\n"
 
     return baseline
 
 
 def ingest_pdf_to_snowflake(file_path, courseID, connection):
-    """Extract text + images from PDF and insert into course_materials."""
+    """Extract text from PDF and insert as ONE material entry."""
+    import os
+
     doc = fitz.open(file_path)
     full_text = ""
     cursor = connection.cursor()
 
+    # Extract text from all pages
     for page_num, page in enumerate(doc):
         text = page.get_text()
-        full_text += text + "\n"
+        full_text += f"--- Page {page_num + 1} ---\n{text}\n\n"
 
-        # store images as base64 (optional)
-        for img_index, img in enumerate(page.get_images(full=True)):
-            xref = img[0]
-            base_image = doc.extract_image(xref)
-            image_bytes = base_image["image"]
-            b64_img = base64.b64encode(image_bytes).decode("utf-8")
+    # Get the PDF filename (without path)
+    pdf_filename = os.path.basename(file_path)
 
-            cursor.execute(
-                "INSERT INTO course_materials (course_id, title, content) VALUES (%s, %s, %s)",
-                (courseID, f"PDF Page {page_num+1} Image {img_index+1}", f"[IMAGE]{b64_img}")
-            )
-
-    # store combined text
+    # Store as ONE material entry with the actual filename
     cursor.execute(
         "INSERT INTO course_materials (course_id, title, content) VALUES (%s, %s, %s)",
-        (courseID, "PDF Full Text", full_text)
+        (courseID, pdf_filename, full_text)
     )
+
     connection.commit()
     cursor.close()
-    return True, "PDF ingested successfully", None
+    return True, f"PDF '{pdf_filename}' ingested successfully as one material", None
 
 
 def ingest_pptx_to_snowflake(file_path, courseID, connection):
@@ -196,10 +191,11 @@ def log_to_snowflake(conv_id, user_id, userorai, message, connection):
 # -------------------------------
 # Get conversation history
 # -------------------------------
-def get_conversation_history(conv_id, connection, limit=20):
+def get_conversation_history(conv_id, connection, limit=3):
     """
     Retrieve the last N messages from a conversation.
     Returns formatted string for context.
+    OPTIMIZED: Reduced to 3 messages to avoid Snowflake 8192 token limit.
     """
     cursor = connection.cursor()
     cursor.execute("""
@@ -216,18 +212,97 @@ def get_conversation_history(conv_id, connection, limit=20):
     # Reverse to get chronological order
     messages = list(reversed(messages))
 
-    # Format conversation history
+    # Format conversation history (OPTIMIZATION: Heavily limit message length)
     history = ""
     for is_ai, message, timestamp in messages:
         if is_ai:
             # Skip the first system message (baseline context) from history
-            if "You are Edwin, the TA AI" in message:
+            if "You are Edwin" in message or "TA AI" in message:
                 continue
-            history += f"Edwin: {message}\n\n"
+            # OPTIMIZATION: Truncate to 200 chars
+            history += f"Edwin: {message[:200]}\n"
         else:
-            history += f"Student: {message}\n\n"
+            # OPTIMIZATION: Truncate to 150 chars
+            history += f"Student: {message[:150]}\n"
 
     return history
+
+
+# --------------------------
+# Retrieve relevant course materials (RAG)
+# --------------------------
+def retrieve_relevant_materials(courseID, question, connection, limit=2):
+    """
+    Retrieve most relevant course materials for the question.
+    Returns list of (title, content_snippet, source_url, full_content)
+    OPTIMIZED: Reduced to 2 materials max, 500 chars each to avoid token limit.
+    """
+    cursor = connection.cursor()
+
+    # OPTIMIZATION: Only fetch 10 most recent materials
+    cursor.execute("""
+        SELECT material_id, title, content, source_url
+        FROM course_materials
+        WHERE course_id = %s AND content IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 10
+    """, (courseID,))
+
+    materials = cursor.fetchall()
+    cursor.close()
+
+    if not materials:
+        return []
+
+    # Simple keyword matching for relevance scoring
+    question_lower = question.lower()
+    # OPTIMIZATION: Filter out common words for better matching
+    stop_words = {'the', 'is', 'at', 'which', 'on', 'a', 'an', 'as', 'are', 'was', 'were', 'be', 'been', 'what', 'when', 'where', 'who', 'how'}
+    question_words = set(w for w in question_lower.split() if w not in stop_words and len(w) > 2)
+
+    scored_materials = []
+    for material_id, title, content, source_url in materials:
+        if not content:
+            continue
+
+        content_lower = content.lower()
+        title_lower = title.lower()
+
+        # OPTIMIZATION: Score based on keyword overlap
+        score = 0
+
+        # Boost score if question words appear in title (highest priority)
+        title_boost = sum(10 for word in question_words if word in title_lower)
+        score += title_boost
+
+        # Quick content check - count matches in first 500 chars only
+        content_sample = content_lower[:500]
+        overlap = sum(1 for word in question_words if word in content_sample)
+        score += overlap
+
+        # OPTIMIZATION: Only process materials with minimum score
+        if score > 0:
+            # Extract relevant snippet (smaller for speed)
+            snippet = content[:150]
+            for word in question_words:
+                if word in content_lower:
+                    idx = content_lower.find(word)
+                    start = max(0, idx - 75)
+                    end = min(len(content), idx + 75)
+                    snippet = "..." + content[start:end] + "..."
+                    break
+
+            scored_materials.append({
+                'score': score,
+                'title': title,
+                'snippet': snippet,
+                'source_url': source_url or '',
+                'full_content': content[:500]  # OPTIMIZATION: Reduced from 1500 to 500 chars
+            })
+
+    # Sort by score and return top N
+    scored_materials.sort(key=lambda x: x['score'], reverse=True)
+    return scored_materials[:limit]
 
 
 # --------------------------
@@ -235,7 +310,9 @@ def get_conversation_history(conv_id, connection, limit=20):
 # --------------------------
 def ask_question(user_id, courseID, question, connection, model=None):
     """
-    Ask a question using Snowflake Cortex AI.
+    Ask a question using Snowflake Cortex AI with RAG citations.
+    Returns: (success, message, answer_or_dict)
+    answer_or_dict format: {"answer": "...", "citations": [...]}
     """
     conv_id = get_user_conversation(user_id, courseID, connection)
     if not conv_id:
@@ -246,6 +323,23 @@ def ask_question(user_id, courseID, question, connection, model=None):
 
     # Get conversation history
     history = get_conversation_history(conv_id, connection)
+
+    # Retrieve relevant course materials (RAG)
+    relevant_materials = retrieve_relevant_materials(courseID, question, connection, limit=3)
+
+    # Build context from relevant materials
+    materials_context = ""
+    citations = []
+
+    if relevant_materials:
+        materials_context = "\n\nRELEVANT COURSE MATERIALS:\n"
+        for i, mat in enumerate(relevant_materials, 1):
+            materials_context += f"\n[Source {i}] {mat['title']}:\n{mat['full_content']}\n"
+            citations.append({
+                'title': mat['title'],
+                'url': mat['source_url'],
+                'snippet': mat['snippet']
+            })
 
     # Get baseline context (first message in conversation)
     cursor = connection.cursor()
@@ -258,15 +352,17 @@ def ask_question(user_id, courseID, question, connection, model=None):
     baseline_row = cursor.fetchone()
     baseline_context = baseline_row[0] if baseline_row else ""
 
-    # Build full prompt for Cortex
+    # Build full prompt for Cortex with RAG context
     full_prompt = f"""{baseline_context}
+
+{materials_context}
 
 CONVERSATION HISTORY:
 {history}
 
 Student: {question}
 
-Edwin:"""
+Edwin (cite sources when using information from course materials):"""
 
     # Use Snowflake Cortex to generate response
     cortex_model = model or CORTEX_MODEL
@@ -282,13 +378,19 @@ Edwin:"""
     # Log AI answer
     log_to_snowflake(conv_id, user_id, True, answer, connection)
 
-    return True, "Successful message!", answer
+    # Return answer with citations
+    response_data = {
+        "answer": answer,
+        "citations": citations
+    }
+
+    return True, "Successful message!", response_data
 
 
 # --------------------------
 # Generate Quiz Questions using Snowflake Cortex
 # --------------------------
-def generate_quiz(courseID, topic, difficulty, num_questions, connection, model=None):
+def generate_quiz(courseID, topic, difficulty, num_questions, connection, model=None, material_id=None):
     """
     Generate quiz questions using Snowflake Cortex AI based on course materials.
 
@@ -299,6 +401,7 @@ def generate_quiz(courseID, topic, difficulty, num_questions, connection, model=
         num_questions: Number of questions to generate (default 8)
         connection: Database connection
         model: Optional Cortex model override
+        material_id: Optional specific material ID to generate quiz from
 
     Returns:
         (success, message, quiz_data)
@@ -316,13 +419,40 @@ def generate_quiz(courseID, topic, difficulty, num_questions, connection, model=
             ]
         }
     """
-    # Get course materials for context
-    baseline_context = get_baseline_context(courseID, connection, limit_chars=6000)
+    cursor = connection.cursor()
 
-    # Build quiz generation prompt
+    # If material_id is provided, fetch ONLY that specific material
+    if material_id:
+        print(f"DEBUG: Fetching material_id={material_id} for courseID={courseID}")
+        cursor.execute("""
+            SELECT title, content FROM course_materials
+            WHERE material_id = %s AND course_id = %s
+        """, (material_id, courseID))
+        material = cursor.fetchone()
+
+        if not material:
+            cursor.close()
+            print(f"DEBUG: Material {material_id} not found in database")
+            return False, f"Material {material_id} not found", None
+
+        print(f"DEBUG: Found material: {material[0]}, content length: {len(material[1]) if material[1] else 0}")
+
+        title, content = material
+        baseline_context = f"""You are Edwin, TA AI. Generate quiz questions based on this material:
+
+MATERIAL: {title}
+CONTENT: {content[:3000]}
+"""
+    else:
+        # Use general course materials if no specific material
+        baseline_context = get_baseline_context(courseID, connection, limit_chars=600)
+
+    cursor.close()
+
+    # Build quiz generation prompt (simplified for speed)
     prompt = f"""{baseline_context}
 
-TASK: Generate a {difficulty} difficulty quiz with {num_questions} multiple choice questions about: {topic}
+TASK: Generate {num_questions} {difficulty}-level multiple choice questions about: {topic}
 
 REQUIREMENTS:
 1. Each question must have exactly 4 options
@@ -347,8 +477,8 @@ OUTPUT FORMAT (strict JSON only, no other text):
 
 Generate the quiz now:"""
 
-    # Use Snowflake Cortex to generate quiz
-    cortex_model = model or CORTEX_MODEL
+    # Use Snowflake Cortex to generate quiz (use faster model)
+    cortex_model = model or "mixtral-8x7b"  # Faster model for quiz generation
     cursor = connection.cursor()
 
     try:

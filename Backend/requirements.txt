@@ -1,5 +1,6 @@
 flask
 flask-cors
-snowflake-connector-python
+snowflake-connector-python>=3.0.0
 pymupdf
 python-pptx
+requests
